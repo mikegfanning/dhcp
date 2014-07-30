@@ -157,7 +157,10 @@ public class DhcpMessageOverlay {
     }
 
     private byte[] getByteArray(int offset, int length) {
-        messageData.position(offset).limit(offset + length);
-        return messageData.slice().array();
+        byte[] answer = new byte[length];
+        for (int i = 0; i < length; i++) {
+            answer[i] = messageData.get(offset + i);
+        }
+        return answer;
     }
 }
