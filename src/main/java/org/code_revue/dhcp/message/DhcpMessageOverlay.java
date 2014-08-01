@@ -3,7 +3,8 @@ package org.code_revue.dhcp.message;
 import java.nio.ByteBuffer;
 
 /**
- * Wrapper class around a {@link java.nio.ByteBuffer} to make it easier to work with DHCP messages.
+ * Wrapper class around a {@link java.nio.ByteBuffer} to make it easier to work with DHCP messages. Kind of follows the
+ * bean pattern, although it isn't backed by the same type of data the getters and setters use.
  *
  * @author Mike Fanning
  * @see <a href="http://www.tcpipguide.com/free/t_DHCPMessageFormat.htm">
