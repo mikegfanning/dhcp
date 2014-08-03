@@ -106,4 +106,15 @@ public enum DhcpOptionType {
         return DhcpOptionType.values()[index];
     }
 
+    /**
+     * Convenience method when working with byte-oriented data ({@link java.nio.ByteBuffer}s, byte arrays, things like
+     * that). This will automatically converted the signed parameter into an integer, so the byte value -1 will become
+     * 255 and such.
+     * @param code
+     * @return
+     */
+    public static DhcpOptionType getByNumericCode(byte code) {
+        return getByNumericCode(code & 0xff);
+    }
+
 }

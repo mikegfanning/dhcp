@@ -42,13 +42,17 @@ public class ByteArrayOption implements DhcpOption {
      * @param data
      * @throws java.lang.IllegalArgumentException If either parameter is null
      */
-    public ByteArrayOption(DhcpOptionType type, byte[] data) {
+    public ByteArrayOption(DhcpOptionType type, byte[] data, int offset, int length) {
         if (null == type || null == data) {
             throw new IllegalArgumentException("Invalid null parameter");
         }
 
         this.type = type;
-        this.data = Arrays.copyOf(data, data.length);
+        this.data = Arrays.copyOfRange(data, offset, offset + length);
+    }
+
+    public ByteArrayOption(DhcpOptionType type, byte[] data) {
+        this(type, data, 0, data.length);
     }
 
     @Override

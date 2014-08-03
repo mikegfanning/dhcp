@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 /**
  * @author Mike Fanning
@@ -33,6 +34,15 @@ public class TestDhcpMessageOverlay {
             Assert.assertArrayEquals(emptyAddress, overlay.getYourIpAddress());
             Assert.assertArrayEquals(emptyAddress, overlay.getServerIpAddress());
             Assert.assertArrayEquals(emptyAddress, overlay.getGatewayIpAddress());
+
+            DhcpOption[] options = new DhcpOption[4];
+            options = overlay.getOptions().toArray(options);
+
+            Assert.assertEquals(DhcpOptionType.MESSAGE_TYPE, options[0].getType());
+            Assert.assertEquals(DhcpOptionType.REQUESTED_IP_ADDR, options[1].getType());
+            Assert.assertEquals(DhcpOptionType.HOST_NAME, options[2].getType());
+            Assert.assertEquals(DhcpOptionType.PARAMETER_REQUEST_LIST, options[3].getType());
+
         }
 
     }

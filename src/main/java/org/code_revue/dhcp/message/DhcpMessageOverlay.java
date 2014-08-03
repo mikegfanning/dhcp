@@ -1,6 +1,8 @@
 package org.code_revue.dhcp.message;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wrapper class around a {@link java.nio.ByteBuffer} to make it easier to work with DHCP messages. Kind of follows the
@@ -157,6 +159,27 @@ public class DhcpMessageOverlay {
         headerData.put(fileName, 0, Math.min(fileName.length, 128));
     }
 
+    public List<DhcpOption> getOptions() {
+
+        // Skip over magic cookie
+        optionsData.position(0);
+        optionsData.getInt();
+
+        List<DhcpOption> answer = new ArrayList<>();
+        byte[] data = new byte[255];
+
+        DhcpOptionType optionType = DhcpOptionType.getByNumericCode(optionsData.get());
+        while (DhcpOptionType.END != optionType) {
+            byte length = optionsData.get();
+            optionsData.get(data, 0, length);
+            answer.add(new ByteArrayOption(optionType, data, 0, length));
+            optionType = DhcpOptionType.getByNumericCode(optionsData.get());
+        }
+
+        return answer;
+
+    }
+
     private byte[] getByteArray(int offset, int length) {
         byte[] answer = new byte[length];
         for (int i = 0; i < length; i++) {
@@ -164,4 +187,5 @@ public class DhcpMessageOverlay {
         }
         return answer;
     }
+
 }
