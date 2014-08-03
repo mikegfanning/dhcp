@@ -55,7 +55,12 @@ public enum DhcpOptionType {
     NIS_DOMAIN(40),
     NIS_SERVER(41),
     NTP_SERVER(42),
-    // Don't really feel like doing all this goofy NetBIOS and X Window stuff
+    NETBIOS_NAME_SERVER(44),
+    NETBIOS_DIST_DGRAM_SERVER(45),
+    NETBIOS_NODE_TYPE(46),
+    NETBIOS_SCOPE(47),
+    X_WINDOWS_FONT_SERVER(48),
+    X_WINDOWS_DISP_MANAGER(49),
     REQUESTED_IP_ADDR(50),
     IP_ADDR_LEASE_TIME(51),
     OVERLOAD(52),
@@ -70,6 +75,8 @@ public enum DhcpOptionType {
     CLIENT_ID(61),
     TFTP_SERVER_NAME(66),
     BOOTFILE_NAME(67),
+    DNS_SEARCH_DOMAIN(119),
+    CLASSLESS_STATIC_ROUTES(121),
     END(255);
 
     private final int numericCode;

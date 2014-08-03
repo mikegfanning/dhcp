@@ -43,6 +43,31 @@ public class TestDhcpMessageOverlay {
             Assert.assertEquals(DhcpOptionType.HOST_NAME, options[2].getType());
             Assert.assertEquals(DhcpOptionType.PARAMETER_REQUEST_LIST, options[3].getType());
 
+            Assert.assertEquals(DhcpMessageType.DHCP_DISCOVER,
+                    DhcpMessageType.getByNumericCode(options[0].getOptionData()[0]));
+            Assert.assertArrayEquals(new byte[] { (byte) 192, (byte) 168, 1, 8 }, options[1].getOptionData());
+            Assert.assertEquals("raspberrypi", new String(options[2].getOptionData()));
+
+            byte[] paramList = options[3].getOptionData();
+            DhcpOptionType[] parameterList = new DhcpOptionType[paramList.length];
+            for (int i = 0; i < paramList.length; i++) {
+                parameterList[i] = DhcpOptionType.getByNumericCode(paramList[i]);
+            }
+
+            Assert.assertEquals(DhcpOptionType.SUBNET_MASK, parameterList[0]);
+            Assert.assertEquals(DhcpOptionType.BROADCAST_ADDR, parameterList[1]);
+            Assert.assertEquals(DhcpOptionType.TIME_OFFSET, parameterList[2]);
+            Assert.assertEquals(DhcpOptionType.ROUTER, parameterList[3]);
+            Assert.assertEquals(DhcpOptionType.DOMAIN_NAME, parameterList[4]);
+            Assert.assertEquals(DhcpOptionType.DNS_SERVER, parameterList[5]);
+            Assert.assertEquals(DhcpOptionType.DNS_SEARCH_DOMAIN, parameterList[6]);
+            Assert.assertEquals(DhcpOptionType.HOST_NAME, parameterList[7]);
+            Assert.assertEquals(DhcpOptionType.NETBIOS_NAME_SERVER, parameterList[8]);
+            Assert.assertEquals(DhcpOptionType.NETBIOS_SCOPE, parameterList[9]);
+            Assert.assertEquals(DhcpOptionType.INTERFACE_MTU, parameterList[10]);
+            Assert.assertEquals(DhcpOptionType.CLASSLESS_STATIC_ROUTES, parameterList[11]);
+            Assert.assertEquals(DhcpOptionType.NTP_SERVER, parameterList[12]);
+
         }
 
     }
