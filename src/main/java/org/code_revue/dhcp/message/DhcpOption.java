@@ -5,6 +5,8 @@ package org.code_revue.dhcp.message;
  */
 public interface DhcpOption {
 
+    public DhcpOptionType getType();
+
     public byte[] getOptionData();
 
 }

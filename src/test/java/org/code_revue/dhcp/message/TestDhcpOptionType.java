@@ -6,7 +6,7 @@ import org.junit.Test;
 /**
  * @author Mike Fanning
  */
-public class TestDhcpOption {
+public class TestDhcpOptionType {
 
     @Test
     public void getByNumericCode() {
