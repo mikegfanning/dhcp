@@ -1,7 +1,12 @@
 package org.code_revue.dhcp.server;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * @author Mike Fanning
@@ -118,6 +123,48 @@ public class TestStandardIp4AddressPool {
             count++;
         }
         Assert.assertEquals(0, count);
+    }
+
+    @Test
+    @Ignore
+    public void concurrentBorrow() throws InterruptedException {
+
+        final StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        final int numThreads = 50;
+        final int numAddresses = 1000;
+        final CyclicBarrier barrier = new CyclicBarrier(numThreads);
+        final CountDownLatch latch = new CountDownLatch(numThreads);
+        final BlockingQueue<Integer> addresses = new ArrayBlockingQueue<Integer>(numThreads * numAddresses);
+
+        Runnable borrower = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    barrier.await(5, TimeUnit.SECONDS);
+
+                    for (int c = 0; c < numAddresses; c++) {
+                        byte[] addr = pool.borrowAddress();
+                        addresses.add(ByteBuffer.wrap(addr).getInt());
+                    }
+
+                    latch.countDown();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        for (int c = 0; c < numThreads; c++) {
+            (new Thread(borrower)).start();
+        }
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Set<Integer> checker = new ConcurrentSkipListSet<>();
+        for (Integer i: addresses) {
+            Assert.assertTrue(checker.add(i));
+        }
+
     }
 
 }
