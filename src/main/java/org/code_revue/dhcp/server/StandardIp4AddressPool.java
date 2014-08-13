@@ -109,6 +109,28 @@ public class StandardIp4AddressPool {
     }
 
     /**
+     * Attempts to borrow a specific address from the pool. If possible, the address is returned, otherwise null is
+     * returned.
+     * @param address IPv4 address to borrow
+     * @return Address or null if not available
+     * @throws java.lang.IllegalArgumentException If address is malformed
+     */
+    public byte[] borrowAddress(byte[] address) {
+        if (address.length != 4) {
+            throw new IllegalArgumentException("Invalid Address");
+        }
+
+        int addr = convertToInt(address);
+
+        if (addr < start || addr > end || flags.get(addr - start)) {
+            return null;
+        }
+
+        flags.set(addr - start);
+        return address;
+    }
+
+    /**
      * Returns an address that has already been borrowed to the pool. If the address is within range, this will release
      * it and allow others to borrow it via the {@link #borrowAddress()} method. Note that returning an address that is
      * out of the range of the pool will not throw any exceptions. This should allow the start and end of the range to

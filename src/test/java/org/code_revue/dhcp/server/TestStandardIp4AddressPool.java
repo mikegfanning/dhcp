@@ -126,6 +126,13 @@ public class TestStandardIp4AddressPool {
     }
 
     @Test
+    public void borrowSpecificAddress() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        Assert.assertNotNull(pool.borrowAddress(address7));
+        Assert.assertNull(pool.borrowAddress(address7));
+    }
+
+    @Test
     @Ignore
     public void concurrentBorrow() throws InterruptedException {
 
