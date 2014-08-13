@@ -88,4 +88,36 @@ public class TestStandardIp4AddressPool {
         }
     }
 
+    @Test
+    public void addSameExclusion() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        for (int c = 0; c < 10; c++) {
+            pool.addExclusion(address6);
+        }
+
+        Iterable<byte[]> exclusions = pool.getExclusions();
+        int count = 0;
+        for (byte[] address: exclusions) {
+            Assert.assertArrayEquals(address6, address);
+            count++;
+        }
+        Assert.assertEquals(1, count);
+    }
+
+    @Test
+    public void addRemoveExclusion() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        Assert.assertTrue(pool.addExclusion(address6));
+        Assert.assertFalse(pool.addExclusion(address6));
+        Assert.assertTrue(pool.removeExclusion(address6));
+        Assert.assertFalse(pool.removeExclusion(address1));
+
+        Iterable<byte[]> exclusions = pool.getExclusions();
+        int count = 0;
+        for (byte[] address: exclusions) {
+            count++;
+        }
+        Assert.assertEquals(0, count);
+    }
+
 }

@@ -1,7 +1,8 @@
 package org.code_revue.dhcp.server;
 
 import java.nio.ByteBuffer;
-import java.util.BitSet;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Mike Fanning
@@ -11,6 +12,18 @@ public class StandardIp4AddressPool {
     private int start, end;
     // TODO: Replace this BitSet with something thread safe
     private BitSet flags;
+
+    // Comparator will keep the integer representation of the IP addresses in the appropriate order.
+    Set<Integer> exclusions = new ConcurrentSkipListSet<>(new Comparator<Integer>() {
+        @Override
+        public int compare(Integer i1, Integer i2) {
+            if (i1 >> 31 == i2 >> 31) {
+                return i1 - i2;
+            } else {
+                return i2;
+            }
+        }
+    });
 
     /**
      * Creates a new IPv4 address pool with the supplied start and end addresses.
@@ -23,8 +36,8 @@ public class StandardIp4AddressPool {
             throw new IllegalArgumentException("Invalid IPv4 Address");
         }
 
-        this.start = ByteBuffer.wrap(start).getInt();
-        this.end = ByteBuffer.wrap(end).getInt();
+        this.start = convertToInt(start);
+        this.end = convertToInt(end);
 
         if (this.start > this.end && !(this.start >= 0 && this.end < 0)) {
             throw new IllegalArgumentException("Start Address is after End Address");
@@ -39,6 +52,48 @@ public class StandardIp4AddressPool {
     }
 
     /**
+     * Adds an address exclusion to the pool. This will prevent the pool from lending this address to callers.
+     * @param address IPv4 address to exclude from the pool
+     * @return If the address was not already excluded
+     */
+    public boolean addExclusion(byte[] address) {
+        int addr = convertToInt(address);
+        if (addr >= start && addr <= end) {
+            flags.set(addr - start);
+        }
+        return exclusions.add(addr);
+
+    }
+
+    /**
+     * Removes an address exclusion from the pool. This will allow the address to be borrowed by callers, provided it is
+     * within the pool's range.
+     * @param address IPv4 address to remove from the exclusion list
+     * @return If the address was previously excluded
+     */
+    public boolean removeExclusion(byte[] address) {
+        int addr = convertToInt(address);
+        boolean removed = exclusions.remove(addr);
+        if (removed && addr >= start && addr <= end) {
+            flags.clear(addr - start);
+        }
+        return removed;
+    }
+
+    /**
+     * Get an {@link java.lang.Iterable} of the addresses that have been excluded from this pool. The return value will
+     * be sorted from least (0.0.0.0) to greatest (255.255.255.255).
+     * @return Iterable of IPv4 addresses
+     */
+    public Iterable<byte[]> getExclusions() {
+        List<byte[]> result = new ArrayList<>();
+        for (Integer i: exclusions) {
+            result.add(convertToByteArray(i));
+        }
+        return result;
+    }
+
+    /**
      * Borrow an address from the pool. This will prevent the pool from lending out the address again until it has been
      * returned via the {@link #returnAddress(byte[])} method.
      * @return IPv4 address
@@ -50,7 +105,7 @@ public class StandardIp4AddressPool {
         }
         int offset = flags.nextClearBit(0);
         flags.set(offset);
-        return ByteBuffer.wrap(new byte[4]).putInt(start + offset).array();
+        return convertToByteArray(start + offset);
     }
 
     /**
@@ -65,10 +120,18 @@ public class StandardIp4AddressPool {
         if (address.length != 4) {
             throw new IllegalArgumentException("Invalid Address");
         }
-        int offset = ByteBuffer.wrap(address).getInt() - start;
+        int offset = convertToInt(address) - start;
         if (offset > 0 && offset < flags.size()) {
             flags.clear(offset);
         }
+    }
+
+    private int convertToInt(byte[] address) {
+        return ByteBuffer.wrap(address).getInt();
+    }
+
+    private byte[] convertToByteArray(int address) {
+        return ByteBuffer.wrap(new byte[4]).putInt(address).array();
     }
 
 }
