@@ -5,12 +5,15 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
+ * Implementation of {@link org.code_revue.dhcp.server.DhcpAddressPool} for IPv4 addresses. The pool hands out addresses
+ * from a range, as defined by the start and end paramters of the constructor. It also has a set of excluded addresses
+ * that the pool will not issue.
+ *
  * @author Mike Fanning
  */
-public class StandardIp4AddressPool {
+public class StandardIp4AddressPool implements DhcpAddressPool {
 
     private int start, end;
-    // TODO: Replace this BitSet with something thread safe
     private BitSet flags;
 
     // Comparator will keep the integer representation of the IP addresses in the appropriate order.
