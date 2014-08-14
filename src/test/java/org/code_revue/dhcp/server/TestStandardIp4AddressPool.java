@@ -133,7 +133,6 @@ public class TestStandardIp4AddressPool {
     }
 
     @Test
-    @Ignore
     public void concurrentBorrow() throws InterruptedException {
 
         final StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);

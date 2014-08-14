@@ -58,11 +58,14 @@ public class StandardIp4AddressPool {
      */
     public boolean addExclusion(byte[] address) {
         int addr = convertToInt(address);
-        if (addr >= start && addr <= end) {
-            flags.set(addr - start);
-        }
-        return exclusions.add(addr);
 
+        synchronized (this) {
+            if (addr >= start && addr <= end) {
+                flags.set(addr - start);
+            }
+        }
+
+        return exclusions.add(addr);
     }
 
     /**
@@ -74,9 +77,13 @@ public class StandardIp4AddressPool {
     public boolean removeExclusion(byte[] address) {
         int addr = convertToInt(address);
         boolean removed = exclusions.remove(addr);
-        if (removed && addr >= start && addr <= end) {
-            flags.clear(addr - start);
+
+        synchronized (this) {
+            if (removed && addr >= start && addr <= end) {
+                flags.clear(addr - start);
+            }
         }
+
         return removed;
     }
 
@@ -100,12 +107,19 @@ public class StandardIp4AddressPool {
      * @throws java.lang.IndexOutOfBoundsException If there are no available addresses
      */
     public byte[] borrowAddress() {
-        if (flags.cardinality() == (end - start + 1)) {
-            throw new IndexOutOfBoundsException("No addresses are available");
+
+        int address;
+
+        synchronized (this) {
+            if (flags.cardinality() == (end - start + 1)) {
+                throw new IndexOutOfBoundsException("No addresses are available");
+            }
+            int offset = flags.nextClearBit(0);
+            address = start + offset;
+            flags.set(offset);
         }
-        int offset = flags.nextClearBit(0);
-        flags.set(offset);
-        return convertToByteArray(start + offset);
+
+        return convertToByteArray(address);
     }
 
     /**
@@ -122,11 +136,12 @@ public class StandardIp4AddressPool {
 
         int addr = convertToInt(address);
 
-        if (addr < start || addr > end || flags.get(addr - start)) {
-            return null;
+        synchronized (this) {
+            if (addr < start || addr > end || flags.get(addr - start)) {
+                return null;
+            }
+            flags.set(addr - start);
         }
-
-        flags.set(addr - start);
         return address;
     }
 
@@ -143,8 +158,10 @@ public class StandardIp4AddressPool {
             throw new IllegalArgumentException("Invalid Address");
         }
         int offset = convertToInt(address) - start;
-        if (offset > 0 && offset < flags.size()) {
-            flags.clear(offset);
+        synchronized (this) {
+            if (offset > 0 && offset < flags.size()) {
+                flags.clear(offset);
+            }
         }
     }
 
