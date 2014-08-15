@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.List;
+import java.util.Map;
 
 /**
  * @author Mike Fanning
@@ -35,20 +35,20 @@ public class TestDhcpMessageOverlay {
             Assert.assertArrayEquals(emptyAddress, overlay.getServerIpAddress());
             Assert.assertArrayEquals(emptyAddress, overlay.getGatewayIpAddress());
 
-            DhcpOption[] options = new DhcpOption[4];
-            options = overlay.getOptions().toArray(options);
+            Map<DhcpOptionType, DhcpOption> options = overlay.getOptions();
 
-            Assert.assertEquals(DhcpOptionType.MESSAGE_TYPE, options[0].getType());
-            Assert.assertEquals(DhcpOptionType.REQUESTED_IP_ADDR, options[1].getType());
-            Assert.assertEquals(DhcpOptionType.HOST_NAME, options[2].getType());
-            Assert.assertEquals(DhcpOptionType.PARAMETER_REQUEST_LIST, options[3].getType());
+            Assert.assertNotNull(options.get(DhcpOptionType.MESSAGE_TYPE));
+            Assert.assertNotNull(options.get(DhcpOptionType.REQUESTED_IP_ADDR));
+            Assert.assertNotNull(options.get(DhcpOptionType.HOST_NAME));
+            Assert.assertNotNull(options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
 
             Assert.assertEquals(DhcpMessageType.DHCP_DISCOVER,
-                    DhcpMessageType.getByNumericCode(options[0].getOptionData()[0]));
-            Assert.assertArrayEquals(new byte[] { (byte) 192, (byte) 168, 1, 8 }, options[1].getOptionData());
-            Assert.assertEquals("raspberrypi", new String(options[2].getOptionData()));
+                    DhcpMessageType.getByNumericCode(options.get(DhcpOptionType.MESSAGE_TYPE).getOptionData()[0]));
+            Assert.assertArrayEquals(new byte[] { (byte) 192, (byte) 168, 1, 8 },
+                    options.get(DhcpOptionType.REQUESTED_IP_ADDR).getOptionData());
+            Assert.assertEquals("raspberrypi", new String(options.get(DhcpOptionType.HOST_NAME).getOptionData()));
 
-            byte[] paramList = options[3].getOptionData();
+            byte[] paramList = options.get(DhcpOptionType.PARAMETER_REQUEST_LIST).getOptionData();
             DhcpOptionType[] parameterList = new DhcpOptionType[paramList.length];
             for (int i = 0; i < paramList.length; i++) {
                 parameterList[i] = DhcpOptionType.getByNumericCode(paramList[i]);
