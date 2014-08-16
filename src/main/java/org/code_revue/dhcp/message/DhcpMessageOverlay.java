@@ -18,7 +18,13 @@ public class DhcpMessageOverlay {
     private ByteBuffer headerData;
     private ByteBuffer optionsData;
 
-    public static final int HEADER_LENGTH = 236;
+    public static final int HEADER_LENGTH = 240;
+
+    /**
+     * @see <a href="http://en.wikipedia.org/wiki/Dhcp#DHCP_discovery">
+     *     http://en.wikipedia.org/wiki/Dhcp#DHCP_discovery</a>
+     */
+    public static final int MAGIC_COOKIE = 0x63825363;
 
     /**
      * Creates a new message overlay for DHCP data.
@@ -159,11 +165,15 @@ public class DhcpMessageOverlay {
         headerData.put(fileName, 0, Math.min(fileName.length, 128));
     }
 
-    public Map<DhcpOptionType, DhcpOption> getOptions() {
+    public int getMagicCookie() {
+        return headerData.getInt(236);
+    }
 
-        // Skip over magic cookie
-        optionsData.position(0);
-        optionsData.getInt();
+    public void setMagicCookie(int cookie) {
+        headerData.putInt(236, cookie);
+    }
+
+    public Map<DhcpOptionType, DhcpOption> getOptions() {
 
         Map<DhcpOptionType, DhcpOption> answer = new HashMap<>();
         byte[] data = new byte[255];

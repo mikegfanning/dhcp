@@ -35,6 +35,8 @@ public class TestDhcpMessageOverlay {
             Assert.assertArrayEquals(emptyAddress, overlay.getServerIpAddress());
             Assert.assertArrayEquals(emptyAddress, overlay.getGatewayIpAddress());
 
+            Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, overlay.getMagicCookie());
+
             Map<DhcpOptionType, DhcpOption> options = overlay.getOptions();
 
             Assert.assertNotNull(options.get(DhcpOptionType.MESSAGE_TYPE));

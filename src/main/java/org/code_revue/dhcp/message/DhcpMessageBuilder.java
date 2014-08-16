@@ -31,12 +31,6 @@ public class DhcpMessageBuilder {
 
     public static final int MAX_UDP_SIZE = 512;
 
-    /**
-     * @see <a href="http://en.wikipedia.org/wiki/Dhcp#DHCP_discovery">
-     *     http://en.wikipedia.org/wiki/Dhcp#DHCP_discovery</a>
-     */
-    public static final int MAGIC_COOKIE = 0x63825363;
-
     private static Random rand;
 
     static {
@@ -172,8 +166,7 @@ public class DhcpMessageBuilder {
             }
         }
 
-        buffer.position(DhcpMessageOverlay.HEADER_LENGTH);
-        buffer.putInt(MAGIC_COOKIE);
+        overlay.setMagicCookie(DhcpMessageOverlay.MAGIC_COOKIE);
 
         for (DhcpOption option: options) {
             buffer.put((byte) option.getType().getNumericCode());
