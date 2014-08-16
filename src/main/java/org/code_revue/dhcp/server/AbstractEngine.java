@@ -1,0 +1,135 @@
+package org.code_revue.dhcp.server;
+
+import org.code_revue.dhcp.message.*;
+
+import java.util.Map;
+
+/**
+ * This class partially implements a {@link org.code_revue.dhcp.server.DhcpEngine}, processing messages, handing out
+ * address leases, tracking device status, etc. It uses the Template design pattern to define basic validation and has
+ * several abstract methods that implementations can use to define the server's behavior for different message types.
+ * Implementations should override the {@link #isValidPayload(DhcpPayload)} method and implement their own address
+ * leasing strategy and device tracking.
+ *
+ * @see <a href="https://www.ietf.org/rfc/rfc2131.txt"></a>
+ * @author Mike Fanning
+ */
+public abstract class AbstractEngine implements DhcpEngine {
+
+    /**
+     * Processes a {@link org.code_revue.dhcp.server.DhcpPayload} and returns one in response. This includes validation,
+     * device status management, DHCP option configuration, etc.
+     * <p>
+     * Currently, this interface and method will return null if there is an error processing the request (e.g. invalid
+     * message type, garbled payload), which means the client will get no response for some classes of error. Might want
+     * to make this throw exceptions if there are issues with the payload, so that callers are aware of bogus messages.
+     * Still waffling on this.
+     * </p>
+     * @param payload Client address information and message data sent to the server
+     * @return Response message, or null if there was an error
+     */
+    @Override
+    public DhcpPayload processDhcpPayload(DhcpPayload payload) {
+
+        DhcpMessageOverlay message = new DhcpMessageOverlay(payload.getData());
+
+        // Perform validation on the payload, regardless of current device status
+        if (!DhcpOpCode.REQUEST.equals(message.getOpCode())) {
+            return null;
+        }
+
+        if (DhcpMessageOverlay.MAGIC_COOKIE != message.getMagicCookie()) {
+            return null;
+        }
+
+        if (!isValidPayload(payload)) {
+            return null;
+        }
+
+        // Message should have a DHCP message type
+        Map<DhcpOptionType, DhcpOption> options = message.getOptions();
+        DhcpMessageType messageType = null;
+        if (!options.containsKey(DhcpOptionType.MESSAGE_TYPE)) {
+            return null;
+        } else {
+            byte[] typeData = options.get(DhcpOptionType.MESSAGE_TYPE).getOptionData();
+            if (1 != typeData.length) {
+                return null;
+            } else {
+                messageType = DhcpMessageType.getByNumericCode(typeData[0]);
+            }
+        }
+
+        // Handle DHCP message by type - ignore any other message types.
+        switch (messageType) {
+            case DHCP_DISCOVER:
+                return handleDhcpDiscover(message);
+            case DHCP_REQUEST:
+                return handleDhcpRequest(message);
+            case DHCP_DECLINE:
+                handleDhcpDecline(message);
+                return null;
+            case DHCP_RELEASE:
+                handleDhcpRelease(message);
+                return null;
+            case DHCP_INFORM:
+                return handleDhcpInform(message);
+            default:
+                return null;
+        }
+
+    }
+
+    /**
+     * This method is called by {@link #processDhcpPayload(DhcpPayload)} to validate the DHCP payload sent for
+     * processing. If it returns true, processing will continue; otherwise nothing will be returned to the client. The
+     * default implementation always returns true, but this method is intended to be overridden by subclasses.
+     * @return True if the payload is valid and processing should continue, false otherwise
+     */
+    protected boolean isValidPayload(DhcpPayload payload) {
+        return true;
+    }
+
+    /**
+     * Handles the DHCP Discover message type. Provided the message data is valid, this should return a payload that
+     * will broadcast a DHCP Offer message.
+     * @param message DHCP Disover message data
+     * @return If message is valid, a payload containing a DHCP Offer message, otherwise, null
+     */
+    protected abstract DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message);
+
+    /**
+     * Handles the DHCP Request message type. If the message data is valid, this should return DHCP Acknowledgement. If
+     * the message is invalid, it should return a DHCP NAK message, or possibly null if something is really messed up.
+     * @param message DHCP Request message data
+     * @return If server accepts the request, a DHCP Acknowledgment payload, otherwise a DHCP NAK or null
+     */
+    protected abstract DhcpPayload handleDhcpRequest(DhcpMessageOverlay message);
+
+    /**
+     * Handles the DHCP Decline message type. If the message is valid, this will signal to the server that the client
+     * does not want the supplied IP address, because it thinks (correctly or incorrectly) that it is already in use.
+     * The server shouldn't return a response to this message (as far as I can tell).
+     * @param message DHCP Decline message data
+     */
+    protected abstract void handleDhcpDecline(DhcpMessageOverlay message);
+
+    /**
+     * Handles the DHCP Release message type. If the message is valid, this will return the supplied IP address to the
+     * pool. The RFC says the server SHOULD (their caps, not mine) retain client information for future DHCP
+     * transactions (i.e. so it can hand out the same address, if possible).
+     * @param message DHCP Release message data
+     */
+    protected abstract void handleDhcpRelease(DhcpMessageOverlay message);
+
+    /**
+     * Handles the DHCP Inform message type. If the message is valid, the server should respond with a DHCP
+     * Acknowledgement containing additional configuration parameters. The server should check for IP address
+     * consistency, but MUST NOT (again, RFC caps, not mine) check for a lease - the client could have a self assigned
+     * IP outside the server's scope and simply be requesting local configuration information.
+     * @param message DHCP Inform message data
+     * @return If the message is valid, a DHCP Acknowledgement containing local configuration parameters
+     */
+    protected abstract DhcpPayload handleDhcpInform(DhcpMessageOverlay message);
+
+}
