@@ -29,7 +29,7 @@ public abstract class AbstractEngine implements DhcpEngine {
      * @return Response message, or null if there was an error
      */
     @Override
-    public DhcpPayload processDhcpPayload(DhcpPayload payload) {
+    public final DhcpPayload processDhcpPayload(DhcpPayload payload) {
 
         DhcpMessageOverlay message = new DhcpMessageOverlay(payload.getData());
 
