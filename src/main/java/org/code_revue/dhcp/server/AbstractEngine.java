@@ -14,6 +14,7 @@ import java.util.Map;
  * leasing strategy and device tracking.
  *
  * @see <a href="https://www.ietf.org/rfc/rfc2131.txt"></a>
+ * @see <a href="http://en.wikipedia.org/wiki/Template_method_pattern"></a>
  * @author Mike Fanning
  */
 public abstract class AbstractEngine implements DhcpEngine {
