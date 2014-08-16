@@ -1,6 +1,8 @@
 package org.code_revue.dhcp.server;
 
 import org.code_revue.dhcp.message.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -15,6 +17,8 @@ import java.util.Map;
  * @author Mike Fanning
  */
 public abstract class AbstractEngine implements DhcpEngine {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstractEngine.class);
 
     /**
      * Processes a {@link org.code_revue.dhcp.server.DhcpPayload} and returns one in response. This includes validation,
@@ -31,14 +35,23 @@ public abstract class AbstractEngine implements DhcpEngine {
     @Override
     public final DhcpPayload processDhcpPayload(DhcpPayload payload) {
 
+        logger.debug("DHCP payload received");
+
+        if (DhcpMessageOverlay.HEADER_LENGTH > payload.getData().capacity()) {
+            logger.error("DHCP message is too short");
+            return null;
+        }
+
         DhcpMessageOverlay message = new DhcpMessageOverlay(payload.getData());
 
         // Perform validation on the payload, regardless of current device status
         if (!DhcpOpCode.REQUEST.equals(message.getOpCode())) {
+            logger.error("Invalid DHCP message op code");
             return null;
         }
 
         if (DhcpMessageOverlay.MAGIC_COOKIE != message.getMagicCookie()) {
+            logger.error("Invalid magic cookie in DHCP message");
             return null;
         }
 
@@ -50,10 +63,12 @@ public abstract class AbstractEngine implements DhcpEngine {
         Map<DhcpOptionType, DhcpOption> options = message.getOptions();
         DhcpMessageType messageType = null;
         if (!options.containsKey(DhcpOptionType.MESSAGE_TYPE)) {
+            logger.error("DHCP message does not contain a message type");
             return null;
         } else {
             byte[] typeData = options.get(DhcpOptionType.MESSAGE_TYPE).getOptionData();
             if (1 != typeData.length) {
+                logger.error("DHCP message type field is incorrect length");
                 return null;
             } else {
                 messageType = DhcpMessageType.getByNumericCode(typeData[0]);
@@ -63,18 +78,24 @@ public abstract class AbstractEngine implements DhcpEngine {
         // Handle DHCP message by type - ignore any other message types.
         switch (messageType) {
             case DHCP_DISCOVER:
+                logger.trace("Handling DHCP Discover message");
                 return handleDhcpDiscover(message);
             case DHCP_REQUEST:
+                logger.trace("Handling DHCP Request message");
                 return handleDhcpRequest(message);
             case DHCP_DECLINE:
+                logger.trace("Handling DHCP Decline message");
                 handleDhcpDecline(message);
                 return null;
             case DHCP_RELEASE:
+                logger.trace("Handling DHCP Release message");
                 handleDhcpRelease(message);
                 return null;
             case DHCP_INFORM:
+                logger.trace("Handling DHCP Inform message");
                 return handleDhcpInform(message);
             default:
+                logger.error("Invalid DHCP message type");
                 return null;
         }
 
