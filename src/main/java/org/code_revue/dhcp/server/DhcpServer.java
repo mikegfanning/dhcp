@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *     <li>Call {@link #stop()} method to shut down server</li>
  * </ol>
  * </p>
+ * <p>
+ * I guess at some point it might be nice to add somethin like Tomcat's Valves.
+ * </p>
  *
  * @author Mike Fanning
  */
