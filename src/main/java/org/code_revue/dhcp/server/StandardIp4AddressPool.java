@@ -1,5 +1,7 @@
 package org.code_revue.dhcp.server;
 
+import org.code_revue.dhcp.util.AddressUtils;
+
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -17,16 +19,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     private BitSet flags;
 
     // Comparator will keep the integer representation of the IP addresses in the appropriate order.
-    Set<Integer> exclusions = new ConcurrentSkipListSet<>(new Comparator<Integer>() {
-        @Override
-        public int compare(Integer i1, Integer i2) {
-            if (i1 >> 31 == i2 >> 31) {
-                return i1 - i2;
-            } else {
-                return i2;
-            }
-        }
-    });
+    Set<Integer> exclusions = new ConcurrentSkipListSet<>(AddressUtils.addressComparator);
 
     /**
      * Creates a new IPv4 address pool with the supplied start and end addresses.
@@ -39,8 +32,8 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
             throw new IllegalArgumentException("Invalid IPv4 Address");
         }
 
-        this.start = convertToInt(start);
-        this.end = convertToInt(end);
+        this.start = AddressUtils.convertToInt(start);
+        this.end = AddressUtils.convertToInt(end);
 
         if (this.start > this.end && !(this.start >= 0 && this.end < 0)) {
             throw new IllegalArgumentException("Start Address is after End Address");
@@ -60,7 +53,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
      * @return If the address was not already excluded
      */
     public boolean addExclusion(byte[] address) {
-        int addr = convertToInt(address);
+        int addr = AddressUtils.convertToInt(address);
 
         synchronized (this) {
             if (addr >= start && addr <= end) {
@@ -78,7 +71,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
      * @return If the address was previously excluded
      */
     public boolean removeExclusion(byte[] address) {
-        int addr = convertToInt(address);
+        int addr = AddressUtils.convertToInt(address);
         boolean removed = exclusions.remove(addr);
 
         synchronized (this) {
@@ -98,7 +91,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     public Iterable<byte[]> getExclusions() {
         List<byte[]> result = new ArrayList<>();
         for (Integer i: exclusions) {
-            result.add(convertToByteArray(i));
+            result.add(AddressUtils.convertToByteArray(i));
         }
         return result;
     }
@@ -122,7 +115,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
             flags.set(offset);
         }
 
-        return convertToByteArray(address);
+        return AddressUtils.convertToByteArray(address);
     }
 
     /**
@@ -137,7 +130,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
             throw new IllegalArgumentException("Invalid Address");
         }
 
-        int addr = convertToInt(address);
+        int addr = AddressUtils.convertToInt(address);
 
         synchronized (this) {
             if (addr < start || addr > end || flags.get(addr - start)) {
@@ -160,20 +153,12 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
         if (address.length != 4) {
             throw new IllegalArgumentException("Invalid Address");
         }
-        int offset = convertToInt(address) - start;
+        int offset = AddressUtils.convertToInt(address) - start;
         synchronized (this) {
             if (offset > 0 && offset < flags.size()) {
                 flags.clear(offset);
             }
         }
-    }
-
-    private int convertToInt(byte[] address) {
-        return ByteBuffer.wrap(address).getInt();
-    }
-
-    private byte[] convertToByteArray(int address) {
-        return ByteBuffer.wrap(new byte[4]).putInt(address).array();
     }
 
 }
