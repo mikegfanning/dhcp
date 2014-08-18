@@ -32,6 +32,7 @@ public class TestStandardEngine {
     private static byte[] addressPoolEnd;
 
     private StandardEngine engine;
+    private ByteBuffer offerMessage;
 
     @BeforeClass
     public static void setupClass() throws UnknownHostException, SocketException {
@@ -50,42 +51,66 @@ public class TestStandardEngine {
     }
 
     @Before
-    public void setup() throws UnknownHostException, SocketException {
+    public void setup() throws Exception {
         engine = new StandardEngine();
         engine.setServerIpAddress(serverIpAddress);
         engine.setHardwareAddress(hardwareAddress);
         engine.addAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
-    }
-
-    @Test
-    public void discover() throws Exception {
 
         try (RandomAccessFile file = new RandomAccessFile("src/test/resources/dhcp0.dat", "r")) {
             FileChannel channel = file.getChannel();
-            ByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-            DhcpPayload incoming = new DhcpPayload(clientWireAddress, buffer);
-            DhcpPayload outgoing = engine.processDhcpPayload(incoming);
-
-            Assert.assertEquals(serverBroadcastAddress, outgoing.getAddress());
-
-            DhcpMessageOverlay response = new DhcpMessageOverlay(outgoing.getData());
-            Assert.assertEquals(DhcpOpCode.REPLY, response.getOpCode());
-            Assert.assertEquals(hardwareAddress.length, response.getHardwareAddressLength());
-            Assert.assertEquals(0x13065f5f, response.getTransactionId());
-            Assert.assertArrayEquals(emptyAddress, response.getClientIpAddress());
-            Assert.assertArrayEquals(serverIpAddress, response.getServerIpAddress());
-
-            int yourAddress = AddressUtils.convertToInt(response.getYourIpAddress());
-            int startAsInt = AddressUtils.convertToInt(addressPoolStart);
-            int endAsInt = AddressUtils.convertToInt(addressPoolEnd);
-            Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, startAsInt) >= 0);
-            Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, endAsInt) <= 0);
-
-            Assert.assertArrayEquals(emptyAddress, response.getGatewayIpAddress());
-            Assert.assertArrayEquals(hardwareAddress, response.getClientHardwareAddress());
-            Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, response.getMagicCookie());
-
+            offerMessage = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
         }
+    }
 
+    @Test
+    public void discover() {
+
+        DhcpPayload incoming = new DhcpPayload(clientWireAddress, offerMessage);
+        DhcpPayload outgoing = engine.processDhcpPayload(incoming);
+
+        Assert.assertEquals(serverBroadcastAddress, outgoing.getAddress());
+
+        DhcpMessageOverlay response = new DhcpMessageOverlay(outgoing.getData());
+        Assert.assertEquals(DhcpOpCode.REPLY, response.getOpCode());
+        Assert.assertEquals(hardwareAddress.length, response.getHardwareAddressLength());
+        Assert.assertEquals(0x13065f5f, response.getTransactionId());
+        Assert.assertArrayEquals(emptyAddress, response.getClientIpAddress());
+        Assert.assertArrayEquals(serverIpAddress, response.getServerIpAddress());
+
+        int yourAddress = AddressUtils.convertToInt(response.getYourIpAddress());
+        int startAsInt = AddressUtils.convertToInt(addressPoolStart);
+        int endAsInt = AddressUtils.convertToInt(addressPoolEnd);
+        Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, startAsInt) >= 0);
+        Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, endAsInt) <= 0);
+
+        Assert.assertArrayEquals(emptyAddress, response.getGatewayIpAddress());
+        Assert.assertArrayEquals(hardwareAddress, response.getClientHardwareAddress());
+        Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, response.getMagicCookie());
+
+    }
+
+    @Test
+    public void badOpCode() {
+        offerMessage = ByteBuffer.allocateDirect(offerMessage.capacity()).put(offerMessage);
+        DhcpMessageOverlay overlay = new DhcpMessageOverlay(offerMessage);
+        overlay.setOpCode(DhcpOpCode.REPLY);
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, offerMessage));
+        Assert.assertNull(response);
+    }
+
+    @Test
+    public void badMagicCookie() {
+        offerMessage = ByteBuffer.allocateDirect(offerMessage.capacity()).put(offerMessage);
+        DhcpMessageOverlay overlay = new DhcpMessageOverlay(offerMessage);
+        overlay.setMagicCookie(~DhcpMessageOverlay.MAGIC_COOKIE);
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, offerMessage));
+        Assert.assertNull(response);
+    }
+
+    @Test
+    public void badMessage() {
+        ByteBuffer message = ByteBuffer.allocateDirect(0);
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, message));
     }
 }
