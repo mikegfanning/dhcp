@@ -139,7 +139,7 @@ public class DhcpMessageOverlay {
     }
 
     public byte[] getClientHardwareAddress() {
-        return getByteArray(28, 16);
+        return getByteArray(28, getHardwareAddressLength());
     }
 
     public void setClientHardwareAddress(byte[] hardwareAddress) {

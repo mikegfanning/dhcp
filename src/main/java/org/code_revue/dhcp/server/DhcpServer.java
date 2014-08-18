@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
@@ -69,6 +70,15 @@ public class DhcpServer implements Runnable {
         channel.bind(new InetSocketAddress(port));
         logger.debug("Setting DatagramChannel to broadcast");
         channel.socket().setBroadcast(true);
+
+        logger.debug("Setting engine server IP address");
+        InetSocketAddress address = (InetSocketAddress) channel.getLocalAddress();
+        engine.setServerIpAddress(address.getAddress().getAddress());
+
+        logger.debug("Setting engine hardware address");
+        NetworkInterface net = NetworkInterface.getByInetAddress(address.getAddress());
+        engine.setHardwareAddress(net.getHardwareAddress());
+
         running  = true;
 
     }

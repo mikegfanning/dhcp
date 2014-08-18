@@ -4,6 +4,7 @@ import org.code_revue.dhcp.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -20,6 +21,18 @@ import java.util.Map;
 public abstract class AbstractEngine implements DhcpEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEngine.class);
+
+    protected byte[] hardwareAddress;
+
+    protected byte[] serverIpAddress;
+
+    public void setHardwareAddress(byte[] hardwareAddress) {
+        this.hardwareAddress = Arrays.copyOf(hardwareAddress, hardwareAddress.length);
+    }
+
+    public void setServerIpAddress(byte[] serverIpAddress) {
+        this.serverIpAddress = Arrays.copyOf(serverIpAddress, serverIpAddress.length);
+    }
 
     /**
      * Processes a {@link org.code_revue.dhcp.server.DhcpPayload} and returns one in response. This includes validation,
@@ -77,28 +90,34 @@ public abstract class AbstractEngine implements DhcpEngine {
         }
 
         // Handle DHCP message by type - ignore any other message types.
+        DhcpPayload response = null;
         switch (messageType) {
             case DHCP_DISCOVER:
                 logger.trace("Handling DHCP Discover message");
-                return handleDhcpDiscover(message);
+                response = handleDhcpDiscover(message, options.get(DhcpOptionType.REQUESTED_IP_ADDR),
+                        options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
+                break;
             case DHCP_REQUEST:
                 logger.trace("Handling DHCP Request message");
-                return handleDhcpRequest(message);
+                response = handleDhcpRequest(message);
+                break;
             case DHCP_DECLINE:
                 logger.trace("Handling DHCP Decline message");
                 handleDhcpDecline(message);
-                return null;
+                break;
             case DHCP_RELEASE:
                 logger.trace("Handling DHCP Release message");
                 handleDhcpRelease(message);
-                return null;
+                break;
             case DHCP_INFORM:
                 logger.trace("Handling DHCP Inform message");
-                return handleDhcpInform(message);
+                response = handleDhcpInform(message);
+                break;
             default:
                 logger.error("Invalid DHCP message type");
-                return null;
         }
+
+        return response;
 
     }
 
@@ -116,9 +135,12 @@ public abstract class AbstractEngine implements DhcpEngine {
      * Handles the DHCP Discover message type. Provided the message data is valid, this should return a payload that
      * will broadcast a DHCP Offer message.
      * @param message DHCP Disover message data
+     * @param reqAddr Requested IP Address option
+     * @param paramList Parameter Request List option
      * @return If message is valid, a payload containing a DHCP Offer message, otherwise, null
      */
-    protected abstract DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message);
+    protected abstract DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, DhcpOption reqAddr,
+                                                      DhcpOption paramList);
 
     /**
      * Handles the DHCP Request message type. If the message data is valid, this should return DHCP Acknowledgement. If
