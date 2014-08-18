@@ -7,7 +7,7 @@ import java.util.Comparator;
  */
 public class AddressUtils {
 
-    public static final Comparator<Integer> addressComparator = new Comparator<Integer>() {
+    public static final Comparator<Integer> ADDRESS_COMPARATOR = new Comparator<Integer>() {
         @Override
         public int compare(Integer i1, Integer i2) {
             if (i1 >> 31 == i2 >> 31) {

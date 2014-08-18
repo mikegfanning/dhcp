@@ -2,7 +2,6 @@ package org.code_revue.dhcp.server;
 
 import org.code_revue.dhcp.util.AddressUtils;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -19,7 +18,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     private BitSet flags;
 
     // Comparator will keep the integer representation of the IP addresses in the appropriate order.
-    Set<Integer> exclusions = new ConcurrentSkipListSet<>(AddressUtils.addressComparator);
+    Set<Integer> exclusions = new ConcurrentSkipListSet<>(AddressUtils.ADDRESS_COMPARATOR);
 
     /**
      * Creates a new IPv4 address pool with the supplied start and end addresses.

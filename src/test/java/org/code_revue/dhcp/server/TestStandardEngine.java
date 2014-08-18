@@ -78,6 +78,8 @@ public class TestStandardEngine {
             int yourAddress = AddressUtils.convertToInt(response.getYourIpAddress());
             int startAsInt = AddressUtils.convertToInt(addressPoolStart);
             int endAsInt = AddressUtils.convertToInt(addressPoolEnd);
+            Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, startAsInt) >= 0);
+            Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, endAsInt) <= 0);
 
             Assert.assertArrayEquals(emptyAddress, response.getGatewayIpAddress());
             Assert.assertArrayEquals(hardwareAddress, response.getClientHardwareAddress());
