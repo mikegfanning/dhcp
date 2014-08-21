@@ -68,8 +68,6 @@ public class DhcpServer implements Runnable {
         channel = DatagramChannel.open();
         logger.debug("Binding DatagramChannel to port {}", port);
         channel.bind(new InetSocketAddress(port));
-        logger.debug("Setting DatagramChannel to broadcast");
-        channel.socket().setBroadcast(true);
 
         logger.debug("Setting engine server IP address");
         InetSocketAddress address = (InetSocketAddress) channel.getLocalAddress();

@@ -1,6 +1,7 @@
 package org.code_revue.dhcp.server;
 
 import org.code_revue.dhcp.message.*;
+import org.code_revue.dhcp.util.AddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,8 @@ import java.util.*;
  * @author Mike Fanning
  */
 public class StandardEngine extends AbstractEngine {
+
+    public static final int DEFAULT_TTL = 86400;
 
     private static final Logger logger = LoggerFactory.getLogger(StandardEngine.class);
     private static final byte[] EMPTY_ADDRESS = new byte[] { 0, 0, 0, 0 };
@@ -34,6 +37,8 @@ public class StandardEngine extends AbstractEngine {
 
     private List<DhcpAddressPool> pools = new ArrayList<>();
 
+    private Map<String, NetworkDevice> devices = new HashMap<>();
+
     private Map<DhcpOptionType, DhcpOption> configuration = new HashMap<>();
 
     @Override
@@ -47,7 +52,18 @@ public class StandardEngine extends AbstractEngine {
             return null;
         }
 
-        // TODO: Register device and state
+        NetworkDevice device = devices.get(AddressUtils.hardwareAddressToString(message.getClientHardwareAddress()));
+        if (null == device) {
+            device = new NetworkDevice();
+            device.setHardwareAddress(message.getClientHardwareAddress());
+            device.setStatus(DeviceStatus.DISCOVERED);
+            devices.put(AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device);
+        } else if (DeviceStatus.OFFERED.equals(device.getStatus()) ||
+                DeviceStatus.ACKNOWLEDGED.equals(device.getStatus()) ){
+            // If the device has already been offered a lease or has acknowledged it we'll ignore subsequent discover
+            // messages until the lease expires.
+            return null;
+        }
 
         byte[] borrowedAddress = null;
 
@@ -80,17 +96,28 @@ public class StandardEngine extends AbstractEngine {
                     .setServerIpAddress(serverIpAddress)
                     .setHardwareAddress(hardwareAddress);
 
+            Map<DhcpOptionType, DhcpOption> offeredOptions = new HashMap<>();
             if (null != paramList) {
                 byte[] parameterList = paramList.getOptionData();
                 for (byte param: parameterList) {
-                    DhcpOption responseOption = getConfiguration(DhcpOptionType.getByNumericCode(param));
-                    if (null != responseOption) {
-                        builder.addOption(responseOption);
+                    DhcpOptionType offeredOptionType = DhcpOptionType.getByNumericCode(param);
+                    DhcpOption offeredOption = getConfiguration(offeredOptionType);
+                    if (null != offeredOption) {
+                        offeredOptions.put(offeredOptionType, offeredOption);
+                        builder.addOption(offeredOption);
                     }
                 }
             }
 
             response = new DhcpPayload(BROADCAST_ADDRESS, builder.build());
+
+            // Update device state.
+            device.setStatus(DeviceStatus.OFFERED);
+            device.setIpAddress(borrowedAddress);
+            Calendar expiration = Calendar.getInstance();
+            expiration.add(Calendar.SECOND, DEFAULT_TTL);
+            device.setLeaseExpiration(expiration.getTime());
+            device.setOptions(offeredOptions);
         }
 
         return response;

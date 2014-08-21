@@ -33,4 +33,18 @@ public class AddressUtils {
         };
     }
 
+    public static String hardwareAddressToString(byte[] address) {
+        StringBuilder builder = new StringBuilder((address.length * 3) - 1);
+        boolean cherry = false;
+        for (byte segment: address) {
+            if (cherry) {
+                builder.append(':');
+            } else {
+                cherry = true;
+            }
+            builder.append(String.format("%02x", segment & 0xff));
+        }
+        return builder.toString();
+    }
+
 }

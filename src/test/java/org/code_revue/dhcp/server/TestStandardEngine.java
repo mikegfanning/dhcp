@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -31,11 +32,13 @@ public class TestStandardEngine {
     private static byte[] addressPoolStart;
     private static byte[] addressPoolEnd;
 
+    private static ByteBuffer readOnlyDiscoverMessage;
+
     private StandardEngine engine;
-    private ByteBuffer offerMessage;
+    private ByteBuffer discoverMessage;
 
     @BeforeClass
-    public static void setupClass() throws UnknownHostException, SocketException {
+    public static void setupClass() throws IOException {
         emptyAddress = new byte[] { 0, 0, 0, 0 };
         broadcastAddress = new byte[] { (byte) 255, (byte) 255, (byte) 255, (byte) 255 };
 
@@ -48,6 +51,11 @@ public class TestStandardEngine {
 
         addressPoolStart = new byte[] { (byte) 192, (byte) 168, 1, 2 };
         addressPoolEnd = new byte[] { (byte) 192, (byte) 168, 1, 10 };
+
+        try (RandomAccessFile file = new RandomAccessFile("src/test/resources/dhcp0.dat", "r")) {
+            FileChannel channel = file.getChannel();
+            readOnlyDiscoverMessage = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
+        }
     }
 
     @Before
@@ -56,17 +64,14 @@ public class TestStandardEngine {
         engine.setServerIpAddress(serverIpAddress);
         engine.setHardwareAddress(hardwareAddress);
         engine.addAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
-
-        try (RandomAccessFile file = new RandomAccessFile("src/test/resources/dhcp0.dat", "r")) {
-            FileChannel channel = file.getChannel();
-            offerMessage = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-        }
+        discoverMessage = ByteBuffer.allocateDirect(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
+        readOnlyDiscoverMessage.position(0);
     }
 
     @Test
     public void discover() {
 
-        DhcpPayload incoming = new DhcpPayload(clientWireAddress, offerMessage);
+        DhcpPayload incoming = new DhcpPayload(clientWireAddress, discoverMessage);
         DhcpPayload outgoing = engine.processDhcpPayload(incoming);
 
         Assert.assertEquals(serverBroadcastAddress, outgoing.getAddress());
@@ -92,19 +97,17 @@ public class TestStandardEngine {
 
     @Test
     public void badOpCode() {
-        offerMessage = ByteBuffer.allocateDirect(offerMessage.capacity()).put(offerMessage);
-        DhcpMessageOverlay overlay = new DhcpMessageOverlay(offerMessage);
+        DhcpMessageOverlay overlay = new DhcpMessageOverlay(discoverMessage);
         overlay.setOpCode(DhcpOpCode.REPLY);
-        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, offerMessage));
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
         Assert.assertNull(response);
     }
 
     @Test
     public void badMagicCookie() {
-        offerMessage = ByteBuffer.allocateDirect(offerMessage.capacity()).put(offerMessage);
-        DhcpMessageOverlay overlay = new DhcpMessageOverlay(offerMessage);
+        DhcpMessageOverlay overlay = new DhcpMessageOverlay(discoverMessage);
         overlay.setMagicCookie(~DhcpMessageOverlay.MAGIC_COOKIE);
-        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, offerMessage));
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
         Assert.assertNull(response);
     }
 
@@ -113,4 +116,5 @@ public class TestStandardEngine {
         ByteBuffer message = ByteBuffer.allocateDirect(0);
         DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, message));
     }
+
 }
