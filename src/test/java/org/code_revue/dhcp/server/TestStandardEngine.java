@@ -1,7 +1,6 @@
 package org.code_revue.dhcp.server;
 
-import org.code_revue.dhcp.message.DhcpMessageOverlay;
-import org.code_revue.dhcp.message.DhcpOpCode;
+import org.code_revue.dhcp.message.*;
 import org.code_revue.dhcp.util.AddressUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,6 +92,8 @@ public class TestStandardEngine {
         Assert.assertArrayEquals(requestOverlay.getClientHardwareAddress(), response.getClientHardwareAddress());
         Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, response.getMagicCookie());
 
+        DhcpOption option = response.getOptions().get(DhcpOptionType.MESSAGE_TYPE);
+        Assert.assertEquals(DhcpMessageType.DHCP_OFFER, DhcpMessageType.getByNumericCode(option.getOptionData()[0]));
     }
 
     @Test
