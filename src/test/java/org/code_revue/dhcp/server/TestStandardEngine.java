@@ -117,4 +117,12 @@ public class TestStandardEngine {
         DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, message));
     }
 
+    @Test
+    public void invalidDeviceStatus() {
+        DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
+        Assert.assertNotNull(response);
+        response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
+        Assert.assertNull(response);
+    }
+
 }
