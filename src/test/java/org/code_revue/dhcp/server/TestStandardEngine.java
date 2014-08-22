@@ -70,7 +70,7 @@ public class TestStandardEngine {
 
     @Test
     public void discover() {
-
+        DhcpMessageOverlay requestOverlay = new DhcpMessageOverlay(discoverMessage);
         DhcpPayload incoming = new DhcpPayload(clientWireAddress, discoverMessage);
         DhcpPayload outgoing = engine.processDhcpPayload(incoming);
 
@@ -90,7 +90,7 @@ public class TestStandardEngine {
         Assert.assertTrue(AddressUtils.ADDRESS_COMPARATOR.compare(yourAddress, endAsInt) <= 0);
 
         Assert.assertArrayEquals(emptyAddress, response.getGatewayIpAddress());
-        Assert.assertArrayEquals(hardwareAddress, response.getClientHardwareAddress());
+        Assert.assertArrayEquals(requestOverlay.getClientHardwareAddress(), response.getClientHardwareAddress());
         Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, response.getMagicCookie());
 
     }

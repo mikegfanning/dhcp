@@ -20,8 +20,21 @@ public enum DhcpMessageType {
 
     private final int code;
 
-    private DhcpMessageType(int code) {
-        this.code = code;
+    private final DhcpOption option;
+
+    private DhcpMessageType(int codeNum) {
+        this.code = codeNum;
+        this.option = new DhcpOption() {
+            @Override
+            public DhcpOptionType getType() {
+                return DhcpOptionType.MESSAGE_TYPE;
+            }
+
+            @Override
+            public byte[] getOptionData() {
+                return new byte[] { (byte) code };
+            }
+        };
     }
 
     /**
@@ -43,6 +56,15 @@ public enum DhcpMessageType {
             throw new IllegalArgumentException("Invalid numeric code.");
         }
         return DhcpMessageType.values()[code - 1];
+    }
+
+    /**
+     * Utility method for getting a {@link org.code_revue.dhcp.message.DhcpOption} without having to go through the
+     * trouble of constructing one yourself.
+     * @return Option for the appropriate message type
+     */
+    public DhcpOption getOption() {
+        return option;
     }
 
 }

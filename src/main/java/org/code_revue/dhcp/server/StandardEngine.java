@@ -94,7 +94,7 @@ public class StandardEngine extends AbstractEngine {
                     .setTransactionId(message.getTransactionId())
                     .setYourIpAddress(borrowedAddress)
                     .setServerIpAddress(serverIpAddress)
-                    .setHardwareAddress(hardwareAddress);
+                    .setHardwareAddress(message.getClientHardwareAddress());
 
             Map<DhcpOptionType, DhcpOption> offeredOptions = new HashMap<>();
             if (null != paramList) {
@@ -107,6 +107,8 @@ public class StandardEngine extends AbstractEngine {
                         builder.addOption(offeredOption);
                     }
                 }
+                offeredOptions.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.DHCP_OFFER.getOption());
+                builder.addOption(DhcpMessageType.DHCP_OFFER.getOption());
             }
 
             response = new DhcpPayload(BROADCAST_ADDRESS, builder.build());
@@ -117,6 +119,7 @@ public class StandardEngine extends AbstractEngine {
             Calendar expiration = Calendar.getInstance();
             expiration.add(Calendar.SECOND, DEFAULT_TTL);
             device.setLeaseExpiration(expiration.getTime());
+            device.setTransactionId(message.getTransactionId());
             device.setOptions(offeredOptions);
         }
 
@@ -138,11 +141,40 @@ public class StandardEngine extends AbstractEngine {
             return null;
         }
 
-        // TODO: Lookup device status and compare transaction id, etc.
+        NetworkDevice device = devices.get(AddressUtils.hardwareAddressToString(message.getClientHardwareAddress()));
+        if (null == device) {
+            return null;
+        }
 
-        // TODO: Lookup previously assigned IP address and configuration information
+        Map<DhcpOptionType, DhcpOption> options = message.getOptions();
+        DhcpOption serverId = options.get(DhcpOptionType.SERVER_ID);
+        if (null == serverId) {
+            return null;
+        } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
+            // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
+            device.setStatus(DeviceStatus.DISCOVERED);
+            byte[] offeredAddress = device.getIpAddress();
+            for (DhcpAddressPool pool: pools) {
+                pool.returnAddress(offeredAddress);
+            }
+            return null;
+        }
 
-        return null;
+        DhcpMessageBuilder builder = new DhcpMessageBuilder();
+        builder.setOpCode(DhcpOpCode.REPLY)
+                .setHardwareType(HardwareType.ETHERNET)
+                .setTransactionId(message.getTransactionId())
+                .setYourIpAddress(device.getIpAddress())
+                .setServerIpAddress(serverIpAddress)
+                .setHardwareAddress(message.getClientHardwareAddress());
+
+        options = device.getOptions();
+        options.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.DHCP_ACK.getOption());
+        for (DhcpOption option: options.values()) {
+            builder.addOption(option);
+        }
+
+        return new DhcpPayload(BROADCAST_ADDRESS, builder.build());
     }
 
     @Override
