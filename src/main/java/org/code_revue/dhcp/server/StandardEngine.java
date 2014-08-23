@@ -127,7 +127,7 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message) {
+    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId) {
 
         // Validate message, update device status, if the requested address is valid, return DHCP Acknowledgement,
         // otherwise, DHCP NAK
@@ -146,8 +146,6 @@ public class StandardEngine extends AbstractEngine {
             return null;
         }
 
-        Map<DhcpOptionType, DhcpOption> options = message.getOptions();
-        DhcpOption serverId = options.get(DhcpOptionType.SERVER_ID);
         if (null == serverId) {
             return null;
         } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
@@ -168,7 +166,7 @@ public class StandardEngine extends AbstractEngine {
                 .setServerIpAddress(serverIpAddress)
                 .setHardwareAddress(message.getClientHardwareAddress());
 
-        options = device.getOptions();
+        Map<DhcpOptionType, DhcpOption> options = device.getOptions();
         options.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.DHCP_ACK.getOption());
         for (DhcpOption option: options.values()) {
             builder.addOption(option);

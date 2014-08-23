@@ -178,6 +178,7 @@ public class DhcpMessageOverlay {
         Map<DhcpOptionType, DhcpOption> answer = new HashMap<>();
         byte[] data = new byte[255];
 
+        optionsData.position(0);
         DhcpOptionType optionType = DhcpOptionType.getByNumericCode(optionsData.get());
         while (DhcpOptionType.END != optionType) {
             byte length = optionsData.get();

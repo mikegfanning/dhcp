@@ -135,11 +135,40 @@ public class TestStandardEngine {
     }
 
     @Test
-    public void invalidDeviceStatus() {
+    public void consecutiveDiscovers() {
         DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
         Assert.assertNotNull(response);
         response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, discoverMessage));
         Assert.assertNull(response);
+    }
+
+    @Test
+    public void request() {
+        DhcpMessageOverlay discover = new DhcpMessageOverlay(discoverMessage);
+        DhcpPayload discPayload = new DhcpPayload(clientWireAddress, discoverMessage);
+        DhcpMessageOverlay offer = new DhcpMessageOverlay(engine.processDhcpPayload(discPayload).getData());
+
+        DhcpMessageBuilder builder = new DhcpMessageBuilder();
+        builder.setOpCode(DhcpOpCode.REQUEST)
+                .setHardwareType(HardwareType.ETHERNET)
+                .setTransactionId(discover.getTransactionId())
+                .setServerIpAddress(offer.getServerIpAddress())
+                .setHardwareAddress(discover.getClientHardwareAddress())
+                .addOption(DhcpMessageType.DHCP_REQUEST.getOption())
+                .addOption(new ByteArrayOption(DhcpOptionType.REQUESTED_IP_ADDR, offer.getYourIpAddress()))
+                .addOption(new ByteArrayOption(DhcpOptionType.SERVER_ID, offer.getServerIpAddress()));
+        DhcpPayload reqPayload = new DhcpPayload(clientWireAddress, builder.build());
+        DhcpMessageOverlay request = new DhcpMessageOverlay(reqPayload.getData());
+        DhcpMessageOverlay ack = new DhcpMessageOverlay(engine.processDhcpPayload(reqPayload).getData());
+
+        Assert.assertEquals(DhcpOpCode.REPLY, ack.getOpCode());
+        Assert.assertEquals(HardwareType.ETHERNET, ack.getHardwareType());
+        Assert.assertEquals(request.getTransactionId(), ack.getTransactionId());
+        Assert.assertArrayEquals(emptyAddress, ack.getClientIpAddress());
+        Assert.assertArrayEquals(serverIpAddress, ack.getServerIpAddress());
+        Assert.assertArrayEquals(emptyAddress, ack.getGatewayIpAddress());
+        Assert.assertArrayEquals(request.getClientHardwareAddress(), ack.getClientHardwareAddress());
+        Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, ack.getMagicCookie());
     }
 
 }
