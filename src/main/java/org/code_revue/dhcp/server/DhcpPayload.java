@@ -12,10 +12,17 @@ public class DhcpPayload {
 
     private SocketAddress address;
 
+    private boolean broadcast;
+
     private ByteBuffer data;
 
     public DhcpPayload(SocketAddress address, ByteBuffer data) {
+        this(address, false, data);
+    }
+
+    public DhcpPayload(SocketAddress address, boolean broadcast, ByteBuffer data) {
         this.address = address;
+        this.broadcast = broadcast;
         this.data = data;
     }
 
@@ -34,6 +41,22 @@ public class DhcpPayload {
      */
     public void setAddress(SocketAddress address) {
         this.address = address;
+    }
+
+    /**
+     * Should this payload be broadcast or unicast?
+     * @return
+     */
+    public boolean isBroadcast() {
+        return broadcast;
+    }
+
+    /**
+     * Sets whether the payload should be broadcast or unicast.
+     * @param broadcast
+     */
+    public void setBroadcast(boolean broadcast) {
+        this.broadcast = broadcast;
     }
 
     /**

@@ -101,6 +101,7 @@ public class DhcpServer implements Runnable {
                 DhcpPayload response = engine.processDhcpPayload(message);
 
                 if (null != response) {
+                    channel.socket().setBroadcast(response.isBroadcast());
                     channel.send(response.getData(), response.getAddress());
                     sendCount.incrementAndGet();
                     logger.debug("Message sent to {}", response.getAddress());

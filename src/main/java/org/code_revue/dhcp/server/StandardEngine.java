@@ -104,7 +104,7 @@ public class StandardEngine extends AbstractEngine {
                 }
             }
 
-            response = new DhcpPayload(BROADCAST_ADDRESS, builder.build());
+            response = new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
 
             // Update device state.
             device.setStatus(DeviceStatus.OFFERED);
@@ -164,7 +164,7 @@ public class StandardEngine extends AbstractEngine {
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
-        return new DhcpPayload(BROADCAST_ADDRESS, builder.build());
+        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
     }
 
     @Override
@@ -226,7 +226,7 @@ public class StandardEngine extends AbstractEngine {
         } catch (UnknownHostException e) {
             logger.error("Could not resolve client IP address", e);
         }
-        return new DhcpPayload(clientAddress, builder.build());
+        return new DhcpPayload(clientAddress, message.isBroadcast(), builder.build());
     }
 
     public void addAddressPool(DhcpAddressPool pool) {
