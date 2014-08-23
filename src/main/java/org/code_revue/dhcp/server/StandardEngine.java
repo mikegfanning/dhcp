@@ -5,10 +5,7 @@ import org.code_revue.dhcp.util.AddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -37,8 +34,10 @@ public class StandardEngine extends AbstractEngine {
 
     private List<DhcpAddressPool> pools = new ArrayList<>();
 
+    // Should probably move this into some separate component altogether, guarantee thread safety therein, etc.
     private Map<String, NetworkDevice> devices = new HashMap<>();
 
+    // Like the devices, should probably move this into some separate component with interface.
     private Map<DhcpOptionType, DhcpOption> configuration = new HashMap<>();
 
     @Override
@@ -47,19 +46,12 @@ public class StandardEngine extends AbstractEngine {
         // Validate message, register device, borrow address from pool, return DHCP Offer
         if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
                 !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress()) ||
-                !Arrays.equals(EMPTY_ADDRESS, message.getServerIpAddress()) ||
-                !Arrays.equals(EMPTY_ADDRESS, message.getGatewayIpAddress())) {
+                !Arrays.equals(EMPTY_ADDRESS, message.getServerIpAddress())) {
             return null;
         }
 
-        NetworkDevice device = devices.get(AddressUtils.hardwareAddressToString(message.getClientHardwareAddress()));
-        if (null == device) {
-            device = new NetworkDevice();
-            device.setHardwareAddress(message.getClientHardwareAddress());
-            device.setStatus(DeviceStatus.DISCOVERED);
-            devices.put(AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device);
-        } else if (DeviceStatus.OFFERED.equals(device.getStatus()) ||
-                DeviceStatus.ACKNOWLEDGED.equals(device.getStatus()) ){
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+        if (!DeviceStatus.DISCOVERED.equals(device.getStatus())){
             // If the device has already been offered a lease or has acknowledged it we'll ignore subsequent discover
             // messages until the lease expires.
             return null;
@@ -94,7 +86,10 @@ public class StandardEngine extends AbstractEngine {
                     .setTransactionId(message.getTransactionId())
                     .setYourIpAddress(borrowedAddress)
                     .setServerIpAddress(serverIpAddress)
-                    .setHardwareAddress(message.getClientHardwareAddress());
+                    .setBroadcast(message.isBroadcast())
+                    .setGatewayIpAddress(message.getGatewayIpAddress())
+                    .setHardwareAddress(message.getClientHardwareAddress())
+                    .addOption(DhcpMessageType.OFFER.getOption());
 
             Map<DhcpOptionType, DhcpOption> offeredOptions = new HashMap<>();
             if (null != paramList) {
@@ -107,8 +102,6 @@ public class StandardEngine extends AbstractEngine {
                         builder.addOption(offeredOption);
                     }
                 }
-                offeredOptions.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.OFFER.getOption());
-                builder.addOption(DhcpMessageType.OFFER.getOption());
             }
 
             response = new DhcpPayload(BROADCAST_ADDRESS, builder.build());
@@ -132,8 +125,7 @@ public class StandardEngine extends AbstractEngine {
         // Validate message, update device status, if the requested address is valid, return DHCP Acknowledgement,
         // otherwise, DHCP NAK
         if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
-                !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress()) ||
-                !Arrays.equals(EMPTY_ADDRESS, message.getGatewayIpAddress())) {
+                !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress())) {
             return null;
         }
 
@@ -141,8 +133,8 @@ public class StandardEngine extends AbstractEngine {
             return null;
         }
 
-        NetworkDevice device = devices.get(AddressUtils.hardwareAddressToString(message.getClientHardwareAddress()));
-        if (null == device) {
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+        if (!DeviceStatus.OFFERED.equals(device.getStatus())) {
             return null;
         }
 
@@ -150,11 +142,7 @@ public class StandardEngine extends AbstractEngine {
             return null;
         } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
             // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
-            device.setStatus(DeviceStatus.DISCOVERED);
-            byte[] offeredAddress = device.getIpAddress();
-            for (DhcpAddressPool pool: pools) {
-                pool.returnAddress(offeredAddress);
-            }
+            resetDevice(device);
             return null;
         }
 
@@ -162,15 +150,20 @@ public class StandardEngine extends AbstractEngine {
         builder.setOpCode(DhcpOpCode.REPLY)
                 .setHardwareType(HardwareType.ETHERNET)
                 .setTransactionId(message.getTransactionId())
+                .setClientIpAddress(message.getClientIpAddress())
                 .setYourIpAddress(device.getIpAddress())
                 .setServerIpAddress(serverIpAddress)
-                .setHardwareAddress(message.getClientHardwareAddress());
+                .setBroadcast(message.isBroadcast())
+                .setGatewayIpAddress(message.getGatewayIpAddress())
+                .setHardwareAddress(message.getClientHardwareAddress())
+                .addOption(DhcpMessageType.ACK.getOption());
 
         Map<DhcpOptionType, DhcpOption> options = device.getOptions();
-        options.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.ACK.getOption());
         for (DhcpOption option: options.values()) {
             builder.addOption(option);
         }
+
+        device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
         return new DhcpPayload(BROADCAST_ADDRESS, builder.build());
     }
@@ -180,6 +173,10 @@ public class StandardEngine extends AbstractEngine {
 
         // Validate message, update device status to reflect that it will not use the supplied IP address and return it
         // to the pool
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+        if (DeviceStatus.OFFERED.equals(device.getStatus())) {
+            resetDevice(device);
+        }
 
     }
 
@@ -187,6 +184,10 @@ public class StandardEngine extends AbstractEngine {
     protected void handleDhcpRelease(DhcpMessageOverlay message) {
 
         // Validate message, update device, and return address to pool
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+        if (DeviceStatus.ACKNOWLEDGED.equals(device.getStatus())) {
+            resetDevice(device);
+        }
 
     }
 
@@ -194,8 +195,27 @@ public class StandardEngine extends AbstractEngine {
     protected DhcpPayload handleDhcpInform(DhcpMessageOverlay message) {
 
         // Validate message, update device status and send back DHCP Acknowledgement with requested configuration info
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+        DhcpMessageBuilder builder = new DhcpMessageBuilder();
+        builder.setOpCode(DhcpOpCode.REPLY)
+                .setHardwareType(HardwareType.ETHERNET)
+                .setTransactionId(message.getTransactionId())
+                .setBroadcast(false)
+                .setYourIpAddress(message.getClientIpAddress())
+                .setServerIpAddress(serverIpAddress)
+                .setGatewayIpAddress(message.getGatewayIpAddress())
+                .setHardwareAddress(message.getClientHardwareAddress())
+                .addOption(DhcpMessageType.ACK.getOption());
 
-        return null;
+        // TODO: Add options and update device
+
+        SocketAddress clientAddress = null;
+        try {
+            clientAddress = new InetSocketAddress(InetAddress.getByAddress(message.getClientIpAddress()), 68);
+        } catch (UnknownHostException e) {
+            logger.error("Could not resolve client IP address", e);
+        }
+        return new DhcpPayload(clientAddress, builder.build());
     }
 
     public void addAddressPool(DhcpAddressPool pool) {
@@ -233,5 +253,28 @@ public class StandardEngine extends AbstractEngine {
      */
     public DhcpOption removeConfiguration(DhcpOptionType optionType) {
         return configuration.remove(optionType);
+    }
+
+    private NetworkDevice getDevice(byte[] hardwareAddress) {
+        String address = AddressUtils.hardwareAddressToString(hardwareAddress);
+        NetworkDevice device = devices.get(address);
+        if (null == device) {
+            device = new NetworkDevice();
+            device.setStatus(DeviceStatus.DISCOVERED);
+            device.setHardwareAddress(hardwareAddress);
+            devices.put(address, device);
+        }
+        return device;
+    }
+
+    private void resetDevice(NetworkDevice device) {
+        DeviceStatus status = device.getStatus();
+        if (DeviceStatus.OFFERED.equals(status) || DeviceStatus.ACKNOWLEDGED.equals(status)) {
+            byte[] offeredAddress = device.getIpAddress();
+            for (DhcpAddressPool pool : pools) {
+                pool.returnAddress(offeredAddress);
+            }
+        }
+        device.setStatus(DeviceStatus.DISCOVERED);
     }
 }
