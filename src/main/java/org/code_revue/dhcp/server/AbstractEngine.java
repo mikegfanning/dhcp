@@ -92,24 +92,24 @@ public abstract class AbstractEngine implements DhcpEngine {
         // Handle DHCP message by type - ignore any other message types.
         DhcpPayload response = null;
         switch (messageType) {
-            case DHCP_DISCOVER:
+            case DISCOVER:
                 logger.trace("Handling DHCP Discover message");
                 response = handleDhcpDiscover(message, options.get(DhcpOptionType.REQUESTED_IP_ADDR),
                         options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
                 break;
-            case DHCP_REQUEST:
+            case REQUEST:
                 logger.trace("Handling DHCP Request message");
                 response = handleDhcpRequest(message, options.get(DhcpOptionType.SERVER_ID));
                 break;
-            case DHCP_DECLINE:
+            case DECLINE:
                 logger.trace("Handling DHCP Decline message");
                 handleDhcpDecline(message);
                 break;
-            case DHCP_RELEASE:
+            case RELEASE:
                 logger.trace("Handling DHCP Release message");
                 handleDhcpRelease(message);
                 break;
-            case DHCP_INFORM:
+            case INFORM:
                 logger.trace("Handling DHCP Inform message");
                 response = handleDhcpInform(message);
                 break;

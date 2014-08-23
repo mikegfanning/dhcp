@@ -9,14 +9,14 @@ package org.code_revue.dhcp.message;
  */
 public enum DhcpMessageType {
 
-    DHCP_DISCOVER(1),
-    DHCP_OFFER(2),
-    DHCP_REQUEST(3),
-    DHCP_DECLINE(4),
-    DHCP_ACK(5),
-    DHCP_NAK(6),
-    DHCP_RELEASE(7),
-    DHCP_INFORM(8);
+    DISCOVER(1),
+    OFFER(2),
+    REQUEST(3),
+    DECLINE(4),
+    ACK(5),
+    NAK(6),
+    RELEASE(7),
+    INFORM(8);
 
     private final int code;
 

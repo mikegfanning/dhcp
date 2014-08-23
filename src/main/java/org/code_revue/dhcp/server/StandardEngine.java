@@ -107,8 +107,8 @@ public class StandardEngine extends AbstractEngine {
                         builder.addOption(offeredOption);
                     }
                 }
-                offeredOptions.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.DHCP_OFFER.getOption());
-                builder.addOption(DhcpMessageType.DHCP_OFFER.getOption());
+                offeredOptions.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.OFFER.getOption());
+                builder.addOption(DhcpMessageType.OFFER.getOption());
             }
 
             response = new DhcpPayload(BROADCAST_ADDRESS, builder.build());
@@ -167,7 +167,7 @@ public class StandardEngine extends AbstractEngine {
                 .setHardwareAddress(message.getClientHardwareAddress());
 
         Map<DhcpOptionType, DhcpOption> options = device.getOptions();
-        options.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.DHCP_ACK.getOption());
+        options.put(DhcpOptionType.MESSAGE_TYPE, DhcpMessageType.ACK.getOption());
         for (DhcpOption option: options.values()) {
             builder.addOption(option);
         }

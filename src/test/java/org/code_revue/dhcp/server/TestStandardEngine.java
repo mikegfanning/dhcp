@@ -100,7 +100,7 @@ public class TestStandardEngine {
 
         Map<DhcpOptionType, DhcpOption> options = response.getOptions();
         DhcpOption messageType = options.get(DhcpOptionType.MESSAGE_TYPE);
-        Assert.assertEquals(DhcpMessageType.DHCP_OFFER,
+        Assert.assertEquals(DhcpMessageType.OFFER,
                 DhcpMessageType.getByNumericCode(messageType.getOptionData()[0]));
         Assert.assertArrayEquals(subnetMask, options.get(DhcpOptionType.SUBNET_MASK).getOptionData());
 
@@ -154,7 +154,7 @@ public class TestStandardEngine {
                 .setTransactionId(discover.getTransactionId())
                 .setServerIpAddress(offer.getServerIpAddress())
                 .setHardwareAddress(discover.getClientHardwareAddress())
-                .addOption(DhcpMessageType.DHCP_REQUEST.getOption())
+                .addOption(DhcpMessageType.REQUEST.getOption())
                 .addOption(new ByteArrayOption(DhcpOptionType.REQUESTED_IP_ADDR, offer.getYourIpAddress()))
                 .addOption(new ByteArrayOption(DhcpOptionType.SERVER_ID, offer.getServerIpAddress()));
         DhcpPayload reqPayload = new DhcpPayload(clientWireAddress, builder.build());
@@ -175,7 +175,7 @@ public class TestStandardEngine {
         Assert.assertEquals(ackOptions.size(), offerOptions.size());
         for (DhcpOption ackOption: ackOptions.values()) {
             if (DhcpOptionType.MESSAGE_TYPE.equals(ackOption.getType())) {
-                Assert.assertArrayEquals(DhcpMessageType.DHCP_ACK.getOption().getOptionData(),
+                Assert.assertArrayEquals(DhcpMessageType.ACK.getOption().getOptionData(),
                         ackOption.getOptionData());
             } else {
                 DhcpOption offerOption = offerOptions.get(ackOption.getType());

@@ -44,7 +44,7 @@ public class TestDhcpMessageOverlay {
             Assert.assertNotNull(options.get(DhcpOptionType.HOST_NAME));
             Assert.assertNotNull(options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
 
-            Assert.assertEquals(DhcpMessageType.DHCP_DISCOVER,
+            Assert.assertEquals(DhcpMessageType.DISCOVER,
                     DhcpMessageType.getByNumericCode(options.get(DhcpOptionType.MESSAGE_TYPE).getOptionData()[0]));
             Assert.assertArrayEquals(new byte[] { (byte) 192, (byte) 168, 1, 8 },
                     options.get(DhcpOptionType.REQUESTED_IP_ADDR).getOptionData());
