@@ -160,8 +160,10 @@ public class TestStandardIp4AddressPool {
             }
         };
 
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
         for (int c = 0; c < numThreads; c++) {
-            (new Thread(borrower)).start();
+            executor.submit(borrower);
         }
 
         latch.await(5, TimeUnit.SECONDS);
@@ -170,6 +172,8 @@ public class TestStandardIp4AddressPool {
         for (Integer i: addresses) {
             Assert.assertTrue(checker.add(i));
         }
+
+        executor.shutdown();
 
     }
 
