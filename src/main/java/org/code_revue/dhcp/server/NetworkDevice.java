@@ -24,8 +24,6 @@ public class NetworkDevice {
 
     private Date leaseExpiration;
 
-    private int transactionId;
-
     private Map<DhcpOptionType, DhcpOption> options = new HashMap<>();
 
     /**
@@ -68,14 +66,6 @@ public class NetworkDevice {
 
     public void setLeaseExpiration(Date leaseExpiration) {
         this.leaseExpiration = leaseExpiration;
-    }
-
-    public int getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(int transactionId) {
-        this.transactionId = transactionId;
     }
 
     /**

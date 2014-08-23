@@ -111,7 +111,7 @@ public abstract class AbstractEngine implements DhcpEngine {
                 break;
             case INFORM:
                 logger.trace("Handling DHCP Inform message");
-                response = handleDhcpInform(message);
+                response = handleDhcpInform(message, options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
                 break;
             default:
                 logger.error("Invalid DHCP message type");
@@ -173,8 +173,9 @@ public abstract class AbstractEngine implements DhcpEngine {
      * consistency, but MUST NOT (again, RFC caps, not mine) check for a lease - the client could have a self assigned
      * IP outside the server's scope and simply be requesting local configuration information.
      * @param message DHCP Inform message data
+     * @param paramList List of parameters to return in the ACK message
      * @return If the message is valid, a DHCP Acknowledgement containing local configuration parameters
      */
-    protected abstract DhcpPayload handleDhcpInform(DhcpMessageOverlay message);
+    protected abstract DhcpPayload handleDhcpInform(DhcpMessageOverlay message, DhcpOption paramList);
 
 }

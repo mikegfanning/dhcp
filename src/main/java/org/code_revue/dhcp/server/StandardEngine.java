@@ -112,7 +112,6 @@ public class StandardEngine extends AbstractEngine {
             Calendar expiration = Calendar.getInstance();
             expiration.add(Calendar.SECOND, DEFAULT_TTL);
             device.setLeaseExpiration(expiration.getTime());
-            device.setTransactionId(message.getTransactionId());
             device.setOptions(offeredOptions);
         }
 
@@ -192,7 +191,7 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpInform(DhcpMessageOverlay message) {
+    protected DhcpPayload handleDhcpInform(DhcpMessageOverlay message, DhcpOption paramList) {
 
         // Validate message, update device status and send back DHCP Acknowledgement with requested configuration info
         NetworkDevice device = getDevice(message.getClientHardwareAddress());
@@ -207,7 +206,19 @@ public class StandardEngine extends AbstractEngine {
                 .setHardwareAddress(message.getClientHardwareAddress())
                 .addOption(DhcpMessageType.ACK.getOption());
 
-        // TODO: Add options and update device
+        Map<DhcpOptionType, DhcpOption> informOptions = new HashMap<>();
+        if (null != paramList) {
+            byte[] parameterList = paramList.getOptionData();
+            for (byte param: parameterList) {
+                DhcpOptionType optionType = DhcpOptionType.getByNumericCode(param);
+                DhcpOption option = getConfiguration(optionType);
+                if (null != option) {
+                    informOptions.put(optionType, option);
+                    builder.addOption(option);
+                }
+            }
+        }
+        device.setOptions(informOptions);
 
         SocketAddress clientAddress = null;
         try {
