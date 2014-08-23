@@ -169,6 +169,20 @@ public class TestStandardEngine {
         Assert.assertArrayEquals(emptyAddress, ack.getGatewayIpAddress());
         Assert.assertArrayEquals(request.getClientHardwareAddress(), ack.getClientHardwareAddress());
         Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, ack.getMagicCookie());
+
+        Map<DhcpOptionType, DhcpOption> ackOptions = ack.getOptions();
+        Map<DhcpOptionType, DhcpOption> offerOptions = offer.getOptions();
+        Assert.assertEquals(ackOptions.size(), offerOptions.size());
+        for (DhcpOption ackOption: ackOptions.values()) {
+            if (DhcpOptionType.MESSAGE_TYPE.equals(ackOption.getType())) {
+                Assert.assertArrayEquals(DhcpMessageType.DHCP_ACK.getOption().getOptionData(),
+                        ackOption.getOptionData());
+            } else {
+                DhcpOption offerOption = offerOptions.get(ackOption.getType());
+                Assert.assertNotNull(offerOption);
+                Assert.assertArrayEquals(offerOption.getOptionData(), ackOption.getOptionData());
+            }
+        }
     }
 
 }
