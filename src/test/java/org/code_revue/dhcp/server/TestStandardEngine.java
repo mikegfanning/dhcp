@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 
 /**
  * @author Mike Fanning
@@ -69,6 +70,11 @@ public class TestStandardEngine {
 
     @Test
     public void discover() {
+        // Set some configured options that the server will return.
+        byte[] subnetMask = new byte[] { (byte) 255, (byte) 255, (byte) 255, 0 };
+        engine.setConfiguration(new ByteArrayOption(DhcpOptionType.SUBNET_MASK, subnetMask));
+        engine.setConfiguration(new ByteArrayOption(DhcpOptionType.COOKIE_SERVER, subnetMask));
+
         DhcpMessageOverlay requestOverlay = new DhcpMessageOverlay(discoverMessage);
         DhcpPayload incoming = new DhcpPayload(clientWireAddress, discoverMessage);
         DhcpPayload outgoing = engine.processDhcpPayload(incoming);
@@ -92,8 +98,18 @@ public class TestStandardEngine {
         Assert.assertArrayEquals(requestOverlay.getClientHardwareAddress(), response.getClientHardwareAddress());
         Assert.assertEquals(DhcpMessageOverlay.MAGIC_COOKIE, response.getMagicCookie());
 
-        DhcpOption option = response.getOptions().get(DhcpOptionType.MESSAGE_TYPE);
-        Assert.assertEquals(DhcpMessageType.DHCP_OFFER, DhcpMessageType.getByNumericCode(option.getOptionData()[0]));
+        Map<DhcpOptionType, DhcpOption> options = response.getOptions();
+        DhcpOption messageType = options.get(DhcpOptionType.MESSAGE_TYPE);
+        Assert.assertEquals(DhcpMessageType.DHCP_OFFER,
+                DhcpMessageType.getByNumericCode(messageType.getOptionData()[0]));
+        Assert.assertArrayEquals(subnetMask, options.get(DhcpOptionType.SUBNET_MASK).getOptionData());
+
+        // Client didn't request this parameter
+        Assert.assertNull(options.get(DhcpOptionType.COOKIE_SERVER));
+
+        // Server doesn't have config information for this parameter
+        Assert.assertNull(options.get(DhcpOptionType.ARP_CACHE_TIMEOUT));
+
     }
 
     @Test

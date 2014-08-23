@@ -213,12 +213,10 @@ public class StandardEngine extends AbstractEngine {
      * configuration options, this mapping will determine the response. Note that the response type of the supplied
      * {@link org.code_revue.dhcp.message.DhcpOption} need not match the request type of the
      * {@link org.code_revue.dhcp.message.DhcpOptionType}.
-     * @param optionType Requested configuration option type, usually via the parameter list in DHCP Discover or Inform
-     *                   message types
      * @param option Response value
      */
-    public void setConfiguration(DhcpOptionType optionType, DhcpOption option) {
-        configuration.put(optionType, option);
+    public void setConfiguration(DhcpOption option) {
+        configuration.put(option.getType(), option);
     }
 
     /**
