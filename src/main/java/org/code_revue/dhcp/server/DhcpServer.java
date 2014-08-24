@@ -1,5 +1,6 @@
 package org.code_revue.dhcp.server;
 
+import org.code_revue.dhcp.util.LoggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,14 +67,14 @@ public class DhcpServer implements Runnable {
         }
 
         channel = DatagramChannel.open();
-        logger.debug("Binding DatagramChannel to port {}", port);
+        logger.info("Binding DatagramChannel to port {}", port);
         channel.bind(new InetSocketAddress(port));
 
-        logger.debug("Setting engine server IP address");
+        logger.info("Setting engine server IP address");
         InetSocketAddress address = (InetSocketAddress) channel.getLocalAddress();
         engine.setServerIpAddress(address.getAddress().getAddress());
 
-        logger.debug("Setting engine hardware address");
+        logger.info("Setting engine hardware address");
         NetworkInterface net = NetworkInterface.getByInetAddress(address.getAddress());
         engine.setHardwareAddress(net.getHardwareAddress());
 
@@ -95,7 +96,11 @@ public class DhcpServer implements Runnable {
                 ByteBuffer messageBuffer = ByteBuffer.allocateDirect(MAX_UDP_PACKET_SIZE);
                 SocketAddress address = channel.receive(messageBuffer);
                 receiveCount.incrementAndGet();
+
                 logger.debug("Message received from {}", address);
+                if (logger.isTraceEnabled()) {
+                    logger.debug("Message data:\n{}", LoggerUtils.bufferToHexString(messageBuffer));
+                }
 
                 DhcpPayload message = new DhcpPayload(address, messageBuffer);
                 DhcpPayload response = engine.processDhcpPayload(message);
@@ -104,7 +109,11 @@ public class DhcpServer implements Runnable {
                     channel.socket().setBroadcast(response.isBroadcast());
                     channel.send(response.getData(), response.getAddress());
                     sendCount.incrementAndGet();
+
                     logger.debug("Message sent to {}", response.getAddress());
+                    if (logger.isTraceEnabled()) {
+                        logger.debug("Message data:\n{}", LoggerUtils.bufferToHexString(response.getData()));
+                    }
                 }
 
             }  catch (AsynchronousCloseException e) {

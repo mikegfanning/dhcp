@@ -46,16 +46,23 @@ public class StandardEngine extends AbstractEngine {
     protected DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, DhcpOption reqAddr, DhcpOption paramList) {
 
         // Validate message, register device, borrow address from pool, return DHCP Offer
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+
         if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
                 !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress()) ||
                 !Arrays.equals(EMPTY_ADDRESS, message.getServerIpAddress())) {
+            logger.warn("Client {} submitted REQUEST with invalid address(es)",
+                    AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             return null;
         }
 
-        NetworkDevice device = getDevice(message.getClientHardwareAddress());
         if (!DeviceStatus.DISCOVERED.equals(device.getStatus())){
             // If the device has already been offered a lease or has acknowledged it we'll ignore subsequent discover
             // messages until the lease expires.
+            if (logger.isWarnEnabled()) {
+                logger.warn("Client {} is in {} state, should be in OFFERED",
+                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device.getStatus());
+            }
             return null;
         }
 
@@ -65,6 +72,9 @@ public class StandardEngine extends AbstractEngine {
             for (DhcpAddressPool pool: pools) {
                 borrowedAddress = pool.borrowAddress(reqAddr.getOptionData());
                 if (null != borrowedAddress) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Borrowed address {} from pool", AddressUtils.ipAddressToString(borrowedAddress));
+                    }
                     break;
                 }
             }
@@ -74,6 +84,9 @@ public class StandardEngine extends AbstractEngine {
             for (DhcpAddressPool pool: pools) {
                 borrowedAddress = pool.borrowAddress();
                 if (null != borrowedAddress) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Borrowed address {} from pool", AddressUtils.ipAddressToString(borrowedAddress));
+                    }
                     break;
                 }
             }
@@ -109,6 +122,10 @@ public class StandardEngine extends AbstractEngine {
             response = new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
 
             // Update device state.
+            if (logger.isDebugEnabled()) {
+                logger.debug("Updating device settings for client {}",
+                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
+            }
             device.setStatus(DeviceStatus.OFFERED);
             device.setIpAddress(borrowedAddress);
             Calendar expiration = Calendar.getInstance();
@@ -129,14 +146,14 @@ public class StandardEngine extends AbstractEngine {
 
         if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
                 !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress())) {
-            logger.debug("Client {} submitted REQUEST with invalid address(es)",
+            logger.warn("Client {} submitted REQUEST with invalid address(es)",
                     AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             return null;
         }
 
         if (!DeviceStatus.OFFERED.equals(device.getStatus())) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Client {} is in {} state, should be in OFFERED",
+            if (logger.isWarnEnabled()) {
+                logger.warn("Client {} is in {} state, should be in OFFERED",
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device.getStatus());
             }
             return null;
@@ -146,8 +163,8 @@ public class StandardEngine extends AbstractEngine {
             return null;
         } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
             // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
-            if (logger.isDebugEnabled()) {
-                logger.debug("Client {} has elected to use another DHCP server {}",
+            if (logger.isInfoEnabled()) {
+                logger.info("Client {} has elected to use another DHCP server {}",
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()),
                         AddressUtils.ipAddressToString(serverId.getOptionData()));
             }
@@ -174,12 +191,7 @@ public class StandardEngine extends AbstractEngine {
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
-        ByteBuffer messageData = builder.build();
-        if (logger.isTraceEnabled()) {
-            logger.trace("Dumping DHCP ACK message:\n{}", LoggerUtils.bufferToHexString(messageData));
-        }
-
-        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), messageData);
+        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
     }
 
     @Override
@@ -242,12 +254,7 @@ public class StandardEngine extends AbstractEngine {
             logger.error("Could not resolve client IP address", e);
         }
 
-        ByteBuffer messageData = builder.build();
-        if (logger.isTraceEnabled()) {
-            logger.trace("Dumping DHCP ACK message:\n{}", LoggerUtils.bufferToHexString(messageData));
-        }
-
-        return new DhcpPayload(clientAddress, message.isBroadcast(), messageData);
+        return new DhcpPayload(clientAddress, message.isBroadcast(), builder.build());
     }
 
     public void addAddressPool(DhcpAddressPool pool) {
