@@ -5,9 +5,7 @@ import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Builder class to aid in the construction of DHCP messages. The class uses {@link java.nio.ByteBuffer}s extensively,
@@ -143,6 +141,14 @@ public class DhcpMessageBuilder {
     public DhcpMessageBuilder addOption(DhcpOption option) {
         options.add(option);
         return this;
+    }
+
+    /**
+     * Returns an unmodifiable copy of the DHCP options that have been set for this builder.
+     * @return Unmodifiable collection of options
+     */
+    public Collection<DhcpOption> getOptions() {
+        return Collections.unmodifiableList(options);
     }
 
     /**

@@ -24,14 +24,8 @@ public abstract class AbstractEngine implements DhcpEngine {
 
     protected byte[] hardwareAddress;
 
-    protected byte[] serverIpAddress;
-
     public void setHardwareAddress(byte[] hardwareAddress) {
         this.hardwareAddress = Arrays.copyOf(hardwareAddress, hardwareAddress.length);
-    }
-
-    public void setServerIpAddress(byte[] serverIpAddress) {
-        this.serverIpAddress = Arrays.copyOf(serverIpAddress, serverIpAddress.length);
     }
 
     /**

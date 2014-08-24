@@ -44,6 +44,18 @@ public class StandardEngine extends AbstractEngine {
     // Like the devices, should probably move this into some separate component with interface.
     private Map<DhcpOptionType, DhcpOption> configuration = new HashMap<>();
 
+    public StandardEngine(byte[] serverIpAddress) {
+        this(serverIpAddress, DEFAULT_TTL);
+    }
+
+    public StandardEngine(byte[] serverIpAddress, int ipAddressLeaseTime) {
+        // TODO: This isn't an address, shouldn't be using "AddressUtils". Get it together nube.
+        DhcpOption leaseTimeOption = new ByteArrayOption(DhcpOptionType.IP_ADDR_LEASE_TIME,
+                AddressUtils.convertToByteArray(ipAddressLeaseTime));
+        configuration.put(leaseTimeOption.getType(), leaseTimeOption);
+        setServerIpAddress(serverIpAddress);
+    }
+
     @Override
     protected DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, DhcpOption reqAddr, DhcpOption paramList) {
 
@@ -102,23 +114,28 @@ public class StandardEngine extends AbstractEngine {
                     .setHardwareType(HardwareType.ETHERNET)
                     .setTransactionId(message.getTransactionId())
                     .setYourIpAddress(borrowedAddress)
-                    .setServerIpAddress(serverIpAddress)
+                    .setServerIpAddress(getServerIpAddress())
                     .setBroadcast(message.isBroadcast())
                     .setGatewayIpAddress(message.getGatewayIpAddress())
                     .setHardwareAddress(message.getClientHardwareAddress())
-                    .addOption(DhcpMessageType.OFFER.getOption());
+                    .addOption(DhcpMessageType.OFFER.getOption())
+                    .addOption(configuration.get(DhcpOptionType.SERVER_ID))
+                    .addOption(configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME));
 
-            Map<DhcpOptionType, DhcpOption> offeredOptions = new HashMap<>();
             if (null != paramList) {
                 byte[] parameterList = paramList.getOptionData();
                 for (byte param: parameterList) {
                     DhcpOptionType offeredOptionType = DhcpOptionType.getByNumericCode(param);
                     DhcpOption offeredOption = getConfiguration(offeredOptionType);
                     if (null != offeredOption) {
-                        offeredOptions.put(offeredOptionType, offeredOption);
                         builder.addOption(offeredOption);
                     }
                 }
+            }
+
+            Map<DhcpOptionType, DhcpOption> offeredOptions = new HashMap<>();
+            for (DhcpOption option: builder.getOptions()) {
+                offeredOptions.put(option.getType(), option);
             }
 
             response = new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
@@ -172,7 +189,7 @@ public class StandardEngine extends AbstractEngine {
 
         if (null == serverId) {
             return null;
-        } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
+        } else if (!Arrays.equals(serverId.getOptionData(), getServerIpAddress())) {
             // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
             if (logger.isInfoEnabled()) {
                 logger.info("Client {} has elected to use another DHCP server {}",
@@ -189,16 +206,19 @@ public class StandardEngine extends AbstractEngine {
                 .setTransactionId(message.getTransactionId())
                 .setClientIpAddress(message.getClientIpAddress())
                 .setYourIpAddress(device.getIpAddress())
-                .setServerIpAddress(serverIpAddress)
+                .setServerIpAddress(getServerIpAddress())
                 .setBroadcast(message.isBroadcast())
                 .setGatewayIpAddress(message.getGatewayIpAddress())
-                .setHardwareAddress(message.getClientHardwareAddress())
-                .addOption(DhcpMessageType.ACK.getOption());
+                .setHardwareAddress(message.getClientHardwareAddress());
 
         Map<DhcpOptionType, DhcpOption> options = device.getOptions();
         for (DhcpOption option: options.values()) {
             builder.addOption(option);
         }
+
+        // This should happen after the previous set of device options is added to the builder, in case the message type
+        // gets in there.
+        builder.addOption(DhcpMessageType.ACK.getOption());
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
@@ -239,7 +259,7 @@ public class StandardEngine extends AbstractEngine {
                 .setTransactionId(message.getTransactionId())
                 .setBroadcast(false)
                 .setYourIpAddress(message.getClientIpAddress())
-                .setServerIpAddress(serverIpAddress)
+                .setServerIpAddress(getServerIpAddress())
                 .setGatewayIpAddress(message.getGatewayIpAddress())
                 .setHardwareAddress(message.getClientHardwareAddress())
                 .addOption(DhcpMessageType.ACK.getOption());
@@ -266,6 +286,19 @@ public class StandardEngine extends AbstractEngine {
         }
 
         return new DhcpPayload(clientAddress, message.isBroadcast(), builder.build());
+    }
+
+    public byte[] getServerIpAddress() {
+        DhcpOption option = configuration.get(DhcpOptionType.SERVER_ID);
+        if (null == option) {
+            return null;
+        }
+        return option.getOptionData();
+    }
+
+    public void setServerIpAddress(byte[] address) {
+        DhcpOption option = new ByteArrayOption(DhcpOptionType.SERVER_ID, address);
+        configuration.put(option.getType(), option);
     }
 
     public void addAddressPool(DhcpAddressPool pool) {

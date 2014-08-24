@@ -9,7 +9,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
@@ -58,8 +60,7 @@ public class TestStandardEngine {
 
     @Before
     public void setup() throws Exception {
-        engine = new StandardEngine();
-        engine.setServerIpAddress(serverIpAddress);
+        engine = new StandardEngine(serverIpAddress);
         engine.addAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
         discoverMessage = ByteBuffer.allocateDirect(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
         readOnlyDiscoverMessage.position(0);
@@ -69,6 +70,8 @@ public class TestStandardEngine {
     public void discover() {
         // Set some configured options that the server will return.
         byte[] subnetMask = new byte[] { (byte) 255, (byte) 255, (byte) 255, 0 };
+        byte[] leaseTimeout = new byte[] { 0, 0, 0, 60 };
+        engine.setConfiguration(new ByteArrayOption(DhcpOptionType.IP_ADDR_LEASE_TIME, leaseTimeout));
         engine.setConfiguration(new ByteArrayOption(DhcpOptionType.SUBNET_MASK, subnetMask));
         engine.setConfiguration(new ByteArrayOption(DhcpOptionType.COOKIE_SERVER, subnetMask));
 
@@ -100,6 +103,11 @@ public class TestStandardEngine {
         Assert.assertEquals(DhcpMessageType.OFFER,
                 DhcpMessageType.getByNumericCode(messageType.getOptionData()[0]));
         Assert.assertArrayEquals(subnetMask, options.get(DhcpOptionType.SUBNET_MASK).getOptionData());
+
+        DhcpOption serverIdOption = options.get(DhcpOptionType.SERVER_ID);
+        Assert.assertArrayEquals(serverIpAddress, serverIdOption.getOptionData());
+
+        Assert.assertNotNull(options.get(DhcpOptionType.IP_ADDR_LEASE_TIME));
 
         // Client didn't request this parameter
         Assert.assertNull(options.get(DhcpOptionType.COOKIE_SERVER));
