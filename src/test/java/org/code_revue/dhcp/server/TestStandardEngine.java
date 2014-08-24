@@ -27,7 +27,6 @@ public class TestStandardEngine {
     private static SocketAddress serverBroadcastAddress;
 
     private static byte[] serverIpAddress;
-    private static byte[] hardwareAddress;
 
     private static byte[] addressPoolStart;
     private static byte[] addressPoolEnd;
@@ -47,7 +46,6 @@ public class TestStandardEngine {
         serverBroadcastAddress = new InetSocketAddress(Inet4Address.getByAddress(broadcastAddress), 68);
 
         serverIpAddress = Inet4Address.getLocalHost().getAddress();
-        hardwareAddress = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
 
         addressPoolStart = new byte[] { (byte) 192, (byte) 168, 1, 2 };
         addressPoolEnd = new byte[] { (byte) 192, (byte) 168, 1, 10 };
@@ -62,7 +60,6 @@ public class TestStandardEngine {
     public void setup() throws Exception {
         engine = new StandardEngine();
         engine.setServerIpAddress(serverIpAddress);
-        engine.setHardwareAddress(hardwareAddress);
         engine.addAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
         discoverMessage = ByteBuffer.allocateDirect(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
         readOnlyDiscoverMessage.position(0);
@@ -83,7 +80,7 @@ public class TestStandardEngine {
 
         DhcpMessageOverlay response = new DhcpMessageOverlay(outgoing.getData());
         Assert.assertEquals(DhcpOpCode.REPLY, response.getOpCode());
-        Assert.assertEquals(hardwareAddress.length, response.getHardwareAddressLength());
+        Assert.assertEquals(6, response.getHardwareAddressLength());
         Assert.assertEquals(0x13065f5f, response.getTransactionId());
         Assert.assertArrayEquals(emptyAddress, response.getClientIpAddress());
         Assert.assertArrayEquals(serverIpAddress, response.getServerIpAddress());

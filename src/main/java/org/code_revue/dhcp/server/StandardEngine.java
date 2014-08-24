@@ -5,6 +5,7 @@ import org.code_revue.dhcp.util.AddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -127,10 +128,19 @@ public class StandardEngine extends AbstractEngine {
                 logger.debug("Updating device settings for client {}",
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             }
+
+            DhcpOption ttlOption = configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME);
+            int ttl;
+            if (null != ttlOption) {
+                ttl = (new BigInteger(ttlOption.getOptionData())).intValue();
+            } else {
+                ttl = DEFAULT_TTL;
+            }
+
             device.setStatus(DeviceStatus.OFFERED);
             device.setIpAddress(borrowedAddress);
             Calendar expiration = Calendar.getInstance();
-            expiration.add(Calendar.SECOND, DEFAULT_TTL);
+            expiration.add(Calendar.SECOND, ttl);
             device.setLeaseExpiration(expiration.getTime());
             device.setOptions(offeredOptions);
         }
