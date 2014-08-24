@@ -2,10 +2,12 @@ package org.code_revue.dhcp.server;
 
 import org.code_revue.dhcp.message.*;
 import org.code_revue.dhcp.util.AddressUtils;
+import org.code_revue.dhcp.util.LoggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -123,17 +125,20 @@ public class StandardEngine extends AbstractEngine {
 
         // Validate message, update device status, if the requested address is valid, return DHCP Acknowledgement,
         // otherwise, DHCP NAK
+        NetworkDevice device = getDevice(message.getClientHardwareAddress());
+
         if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
                 !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress())) {
+            logger.debug("Client {} submitted REQUEST with invalid address(es)",
+                    AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             return null;
         }
 
-        if (!Arrays.equals(serverIpAddress, message.getServerIpAddress())) {
-            return null;
-        }
-
-        NetworkDevice device = getDevice(message.getClientHardwareAddress());
         if (!DeviceStatus.OFFERED.equals(device.getStatus())) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Client {} is in {} state, should be in OFFERED",
+                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device.getStatus());
+            }
             return null;
         }
 
@@ -141,6 +146,11 @@ public class StandardEngine extends AbstractEngine {
             return null;
         } else if (!Arrays.equals(serverId.getOptionData(), serverIpAddress)) {
             // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
+            if (logger.isDebugEnabled()) {
+                logger.debug("Client {} has elected to use another DHCP server {}",
+                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()),
+                        AddressUtils.ipAddressToString(serverId.getOptionData()));
+            }
             resetDevice(device);
             return null;
         }
@@ -164,7 +174,12 @@ public class StandardEngine extends AbstractEngine {
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
-        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
+        ByteBuffer messageData = builder.build();
+        if (logger.isTraceEnabled()) {
+            logger.trace("Dumping DHCP ACK message:\n{}", LoggerUtils.bufferToHexString(messageData));
+        }
+
+        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), messageData);
     }
 
     @Override
@@ -226,14 +241,22 @@ public class StandardEngine extends AbstractEngine {
         } catch (UnknownHostException e) {
             logger.error("Could not resolve client IP address", e);
         }
-        return new DhcpPayload(clientAddress, message.isBroadcast(), builder.build());
+
+        ByteBuffer messageData = builder.build();
+        if (logger.isTraceEnabled()) {
+            logger.trace("Dumping DHCP ACK message:\n{}", LoggerUtils.bufferToHexString(messageData));
+        }
+
+        return new DhcpPayload(clientAddress, message.isBroadcast(), messageData);
     }
 
     public void addAddressPool(DhcpAddressPool pool) {
+        logger.debug("Adding address pool {}", pool);
         pools.add(pool);
     }
 
     public boolean removeAddressPool(DhcpAddressPool pool) {
+        logger.debug("Removing address pool {}", pool);
         return pools.remove(pool);
     }
 
@@ -245,6 +268,7 @@ public class StandardEngine extends AbstractEngine {
      * @param option Response value
      */
     public void setConfiguration(DhcpOption option) {
+        logger.debug("Setting configuration option {}", option);
         configuration.put(option.getType(), option);
     }
 
@@ -268,8 +292,10 @@ public class StandardEngine extends AbstractEngine {
 
     private NetworkDevice getDevice(byte[] hardwareAddress) {
         String address = AddressUtils.hardwareAddressToString(hardwareAddress);
+        logger.debug("Retrieving network device with hardware address {}", address);
         NetworkDevice device = devices.get(address);
         if (null == device) {
+            logger.debug("Device not found, creating new record for {}", address);
             device = new NetworkDevice();
             device.setStatus(DeviceStatus.DISCOVERED);
             device.setHardwareAddress(hardwareAddress);
@@ -279,8 +305,10 @@ public class StandardEngine extends AbstractEngine {
     }
 
     private void resetDevice(NetworkDevice device) {
+        logger.debug("Resetting networked device status");
         DeviceStatus status = device.getStatus();
         if (DeviceStatus.OFFERED.equals(status) || DeviceStatus.ACKNOWLEDGED.equals(status)) {
+            logger.debug("Returning address to pool");
             byte[] offeredAddress = device.getIpAddress();
             for (DhcpAddressPool pool : pools) {
                 pool.returnAddress(offeredAddress);

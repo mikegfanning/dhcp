@@ -3,6 +3,7 @@ package org.code_revue.dhcp.util;
 import java.util.Comparator;
 
 /**
+ * Basically a bunch of junk for dealing with the weirdness of signed vs. unsigned bytes in Java.
  * @author Mike Fanning
  */
 public class AddressUtils {
@@ -43,6 +44,20 @@ public class AddressUtils {
                 cherry = true;
             }
             builder.append(String.format("%02x", segment & 0xff));
+        }
+        return builder.toString();
+    }
+
+    public static String ipAddressToString(byte[] address) {
+        StringBuilder builder = new StringBuilder(address.length * 4);
+        boolean cherry = false;
+        for (byte segment: address) {
+            if (cherry) {
+                builder.append('.');
+            } else {
+                cherry = true;
+            }
+            builder.append(segment & 0xff);
         }
         return builder.toString();
     }
