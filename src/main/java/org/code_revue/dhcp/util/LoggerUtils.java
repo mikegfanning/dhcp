@@ -1,7 +1,5 @@
 package org.code_revue.dhcp.util;
 
-import org.slf4j.Logger;
-
 import java.nio.ByteBuffer;
 
 /**
