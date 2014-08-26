@@ -93,7 +93,8 @@ public abstract class AbstractEngine implements DhcpEngine {
                 break;
             case REQUEST:
                 logger.trace("Handling DHCP Request message");
-                response = handleDhcpRequest(message, options.get(DhcpOptionType.SERVER_ID));
+                response = handleDhcpRequest(message, options.get(DhcpOptionType.SERVER_ID),
+                        options.get(DhcpOptionType.REQUESTED_IP_ADDR));
                 break;
             case DECLINE:
                 logger.trace("Handling DHCP Decline message");
@@ -141,9 +142,11 @@ public abstract class AbstractEngine implements DhcpEngine {
      * the message is invalid, it should return a DHCP NAK message, or possibly null if something is really messed up.
      * @param message DHCP Request message data
      * @param serverId Server IP Address option
+     * @param requestedIpAddress Requested IP Address option
      * @return If server accepts the request, a DHCP Acknowledgment payload, otherwise a DHCP NAK or null
      */
-    protected abstract DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId);
+    protected abstract DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId,
+                                                     DhcpOption requestedIpAddress);
 
     /**
      * Handles the DHCP Decline message type. If the message is valid, this will signal to the server that the client

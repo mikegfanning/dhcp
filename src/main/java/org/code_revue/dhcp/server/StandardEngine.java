@@ -146,18 +146,10 @@ public class StandardEngine extends AbstractEngine {
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             }
 
-            DhcpOption ttlOption = configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME);
-            int ttl;
-            if (null != ttlOption) {
-                ttl = (new BigInteger(ttlOption.getOptionData())).intValue();
-            } else {
-                ttl = DEFAULT_TTL;
-            }
-
             device.setStatus(DeviceStatus.OFFERED);
             device.setIpAddress(borrowedAddress);
             Calendar expiration = Calendar.getInstance();
-            expiration.add(Calendar.SECOND, ttl);
+            expiration.add(Calendar.SECOND, getIpAddressLeaseTime());
             device.setLeaseExpiration(expiration.getTime());
             device.setOptions(offeredOptions);
         }
@@ -166,29 +158,57 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId) {
+    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId,
+                                            DhcpOption requestedIpAddress) {
 
         // Validate message, update device status, if the requested address is valid, return DHCP Acknowledgement,
         // otherwise, DHCP NAK
         NetworkDevice device = getDevice(message.getClientHardwareAddress());
 
-        if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress()) ||
-                !Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress())) {
+        if (!Arrays.equals(EMPTY_ADDRESS, message.getYourIpAddress())) {
             logger.warn("Client {} submitted REQUEST with invalid address(es)",
                     AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
             return null;
         }
 
-        if (!DeviceStatus.OFFERED.equals(device.getStatus())) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Client {} is in {} state, should be in OFFERED",
-                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device.getStatus());
-            }
-            return null;
-        }
-
         if (null == serverId) {
-            return null;
+            byte[] requestedAddress;
+            if (null == requestedIpAddress) {
+                // Client is attempting to renew or rebind
+                requestedAddress = message.getClientIpAddress();
+            } else {
+                // Client is attempting to init-reboot
+                if (!Arrays.equals(EMPTY_ADDRESS, message.getClientIpAddress())) {
+                    logger.warn("Client {} sent a message indicating it is in the INIT-REBOOT state, but sent non-zero " +
+                            "ciddr", AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
+                    return null;
+                }
+                requestedAddress = requestedIpAddress.getOptionData();
+            }
+
+            if ((new Date()).compareTo(device.getLeaseExpiration()) <= 0) {
+                Calendar now = Calendar.getInstance();
+                now.add(Calendar.SECOND, getIpAddressLeaseTime());
+                device.setLeaseExpiration(now.getTime());
+                device.getOptions().put(DhcpOptionType.IP_ADDR_LEASE_TIME,
+                        configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME));
+            } else {
+                byte[] offeredIpAddress = null;
+                for (DhcpAddressPool pool: pools) {
+                    offeredIpAddress = pool.borrowAddress(offeredIpAddress);
+                    if (null != offeredIpAddress) {
+                        break;
+                    }
+                }
+
+                if (null == offeredIpAddress) {
+                    // TODO: Return NAK
+                } else {
+                    device.setIpAddress(offeredIpAddress);
+                    device.getOptions().put(DhcpOptionType.REQUESTED_IP_ADDR,
+                            new ByteArrayOption(DhcpOptionType.REQUESTED_IP_ADDR, offeredIpAddress));
+                }
+            }
         } else if (!Arrays.equals(serverId.getOptionData(), getServerIpAddress())) {
             // Client is going to use another DHCP server. We can return the address we assigned to it to the pool.
             if (logger.isInfoEnabled()) {
@@ -198,6 +218,13 @@ public class StandardEngine extends AbstractEngine {
             }
             resetDevice(device);
             return null;
+        } else {
+            // Client selected this server during initial select
+            if (!DeviceStatus.OFFERED.equals(device.getStatus())) {
+                logger.warn("Client {} sent a message indicating it is in the SELECTING state, doesn't match server",
+                        AddressUtils.hardwareAddressToString(device.getHardwareAddress()));
+                return null;
+            }
         }
 
         DhcpMessageBuilder builder = new DhcpMessageBuilder();
@@ -299,6 +326,14 @@ public class StandardEngine extends AbstractEngine {
     public void setServerIpAddress(byte[] address) {
         DhcpOption option = new ByteArrayOption(DhcpOptionType.SERVER_ID, address);
         configuration.put(option.getType(), option);
+    }
+
+    public int getIpAddressLeaseTime() {
+        DhcpOption option = configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME);
+        if (null == option) {
+            return DEFAULT_TTL;
+        }
+        return (new BigInteger(option.getOptionData())).intValue();
     }
 
     public void addAddressPool(DhcpAddressPool pool) {
