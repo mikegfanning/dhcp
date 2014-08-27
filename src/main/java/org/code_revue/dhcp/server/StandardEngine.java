@@ -36,7 +36,7 @@ public class StandardEngine extends AbstractEngine {
         }
     }
 
-    private List<DhcpAddressPool> pools = new ArrayList<>();
+    private DhcpAddressPool pool;
 
     // Should probably move this into some separate component altogether, guarantee thread safety therein, etc.
     private Map<String, NetworkDevice> devices = new HashMap<>();
@@ -83,27 +83,11 @@ public class StandardEngine extends AbstractEngine {
         byte[] borrowedAddress = null;
 
         if (null != reqAddr) {
-            for (DhcpAddressPool pool: pools) {
-                borrowedAddress = pool.borrowAddress(reqAddr.getOptionData());
-                if (null != borrowedAddress) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Borrowed address {} from pool", AddressUtils.ipAddressToString(borrowedAddress));
-                    }
-                    break;
-                }
-            }
+            borrowedAddress = pool.borrowAddress(reqAddr.getOptionData());
         }
 
         if (null == borrowedAddress) {
-            for (DhcpAddressPool pool: pools) {
-                borrowedAddress = pool.borrowAddress();
-                if (null != borrowedAddress) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Borrowed address {} from pool", AddressUtils.ipAddressToString(borrowedAddress));
-                    }
-                    break;
-                }
-            }
+            borrowedAddress = pool.borrowAddress();
         }
 
         DhcpPayload response = null;
@@ -193,13 +177,7 @@ public class StandardEngine extends AbstractEngine {
                 device.getOptions().put(DhcpOptionType.IP_ADDR_LEASE_TIME,
                         configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME));
             } else {
-                byte[] offeredIpAddress = null;
-                for (DhcpAddressPool pool: pools) {
-                    offeredIpAddress = pool.borrowAddress(offeredIpAddress);
-                    if (null != offeredIpAddress) {
-                        break;
-                    }
-                }
+                byte[] offeredIpAddress =  pool.borrowAddress(requestedAddress);
 
                 if (null == offeredIpAddress) {
                     // TODO: Return NAK
@@ -336,14 +314,12 @@ public class StandardEngine extends AbstractEngine {
         return (new BigInteger(option.getOptionData())).intValue();
     }
 
-    public void addAddressPool(DhcpAddressPool pool) {
-        logger.debug("Adding address pool {}", pool);
-        pools.add(pool);
+    public DhcpAddressPool getAddressPool() {
+        return pool;
     }
 
-    public boolean removeAddressPool(DhcpAddressPool pool) {
-        logger.debug("Removing address pool {}", pool);
-        return pools.remove(pool);
+    public void setAddressPool(DhcpAddressPool pool) {
+        this.pool = pool;
     }
 
     /**
@@ -396,9 +372,7 @@ public class StandardEngine extends AbstractEngine {
         if (DeviceStatus.OFFERED.equals(status) || DeviceStatus.ACKNOWLEDGED.equals(status)) {
             logger.debug("Returning address to pool");
             byte[] offeredAddress = device.getIpAddress();
-            for (DhcpAddressPool pool : pools) {
-                pool.returnAddress(offeredAddress);
-            }
+            pool.returnAddress(offeredAddress);
         }
         device.setStatus(DeviceStatus.DISCOVERED);
     }
