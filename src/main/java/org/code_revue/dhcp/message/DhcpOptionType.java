@@ -75,8 +75,10 @@ public enum DhcpOptionType {
     CLIENT_ID(61),
     TFTP_SERVER_NAME(66),
     BOOTFILE_NAME(67),
+    LDAP(95),
     DNS_SEARCH_DOMAIN(119),
     CLASSLESS_STATIC_ROUTES(121),
+    RESERVED(253),
     END(255);
 
     private final int numericCode;
@@ -107,7 +109,9 @@ public enum DhcpOptionType {
      */
     public static DhcpOptionType getByNumericCode(int code) {
         int index = Arrays.binarySearch(DhcpOptionType.values(), code, comp);
-        if (index < 0) {
+        if (code >= 224 && code <= 254) {
+            return DhcpOptionType.RESERVED;
+        } else if (index < 0) {
             throw new IllegalArgumentException("Invalid numeric code.");
         }
         return DhcpOptionType.values()[index];
