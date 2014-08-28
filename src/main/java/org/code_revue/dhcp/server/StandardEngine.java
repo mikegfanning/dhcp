@@ -122,7 +122,7 @@ public class StandardEngine extends AbstractEngine {
                 offeredOptions.put(option.getType(), option);
             }
 
-            response = new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
+            response = new DhcpPayload(BROADCAST_ADDRESS, true, builder.build());
 
             // Update device state.
             if (logger.isDebugEnabled()) {
@@ -227,7 +227,7 @@ public class StandardEngine extends AbstractEngine {
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
-        return new DhcpPayload(BROADCAST_ADDRESS, message.isBroadcast(), builder.build());
+        return new DhcpPayload(BROADCAST_ADDRESS, true, builder.build());
     }
 
     @Override
