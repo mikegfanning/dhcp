@@ -214,16 +214,15 @@ public class StandardEngine extends AbstractEngine {
                 .setServerIpAddress(getServerIpAddress())
                 .setBroadcast(message.isBroadcast())
                 .setGatewayIpAddress(message.getGatewayIpAddress())
-                .setHardwareAddress(message.getClientHardwareAddress());
+                .setHardwareAddress(message.getClientHardwareAddress())
+                .addOption(DhcpMessageType.ACK.getOption());
 
         Map<DhcpOptionType, DhcpOption> options = device.getOptions();
         for (DhcpOption option: options.values()) {
-            builder.addOption(option);
+            if (!DhcpOptionType.MESSAGE_TYPE.equals(option.getType())) {
+                builder.addOption(option);
+            }
         }
-
-        // This should happen after the previous set of device options is added to the builder, in case the message type
-        // gets in there.
-        builder.addOption(DhcpMessageType.ACK.getOption());
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
 
