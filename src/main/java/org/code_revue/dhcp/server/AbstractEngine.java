@@ -69,7 +69,7 @@ public abstract class AbstractEngine implements DhcpEngine {
 
         // Message should have a DHCP message type
         Map<DhcpOptionType, DhcpOption> options = message.getOptions();
-        DhcpMessageType messageType = null;
+        DhcpMessageType messageType;
         if (!options.containsKey(DhcpOptionType.MESSAGE_TYPE)) {
             logger.error("DHCP message does not contain a message type");
             return null;
@@ -88,13 +88,11 @@ public abstract class AbstractEngine implements DhcpEngine {
         switch (messageType) {
             case DISCOVER:
                 logger.trace("Handling DHCP Discover message");
-                response = handleDhcpDiscover(message, options.get(DhcpOptionType.REQUESTED_IP_ADDR),
-                        options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
+                response = handleDhcpDiscover(message, options);
                 break;
             case REQUEST:
                 logger.trace("Handling DHCP Request message");
-                response = handleDhcpRequest(message, options.get(DhcpOptionType.SERVER_ID),
-                        options.get(DhcpOptionType.REQUESTED_IP_ADDR));
+                response = handleDhcpRequest(message, options);
                 break;
             case DECLINE:
                 logger.trace("Handling DHCP Decline message");
@@ -106,7 +104,7 @@ public abstract class AbstractEngine implements DhcpEngine {
                 break;
             case INFORM:
                 logger.trace("Handling DHCP Inform message");
-                response = handleDhcpInform(message, options.get(DhcpOptionType.PARAMETER_REQUEST_LIST));
+                response = handleDhcpInform(message, options);
                 break;
             default:
                 logger.error("Invalid DHCP message type");
@@ -130,23 +128,21 @@ public abstract class AbstractEngine implements DhcpEngine {
      * Handles the DHCP Discover message type. Provided the message data is valid, this should return a payload that
      * will broadcast a DHCP Offer message.
      * @param message DHCP Disover message data
-     * @param reqAddr Requested IP Address option
-     * @param paramList Parameter Request List option
+     * @param options DHCP Options section
      * @return If message is valid, a payload containing a DHCP Offer message, otherwise, null
      */
-    protected abstract DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, DhcpOption reqAddr,
-                                                      DhcpOption paramList);
+    protected abstract DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message,
+                                                      Map<DhcpOptionType, DhcpOption> options);
 
     /**
      * Handles the DHCP Request message type. If the message data is valid, this should return DHCP Acknowledgement. If
      * the message is invalid, it should return a DHCP NAK message, or possibly null if something is really messed up.
      * @param message DHCP Request message data
-     * @param serverId Server IP Address option
-     * @param requestedIpAddress Requested IP Address option
+     * @param options DHCP Options section
      * @return If server accepts the request, a DHCP Acknowledgment payload, otherwise a DHCP NAK or null
      */
-    protected abstract DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId,
-                                                     DhcpOption requestedIpAddress);
+    protected abstract DhcpPayload handleDhcpRequest(DhcpMessageOverlay message,
+                                                     Map<DhcpOptionType, DhcpOption> options);
 
     /**
      * Handles the DHCP Decline message type. If the message is valid, this will signal to the server that the client
@@ -170,9 +166,10 @@ public abstract class AbstractEngine implements DhcpEngine {
      * consistency, but MUST NOT (again, RFC caps, not mine) check for a lease - the client could have a self assigned
      * IP outside the server's scope and simply be requesting local configuration information.
      * @param message DHCP Inform message data
-     * @param paramList List of parameters to return in the ACK message
+     * @param options DHCP Options section
      * @return If the message is valid, a DHCP Acknowledgement containing local configuration parameters
      */
-    protected abstract DhcpPayload handleDhcpInform(DhcpMessageOverlay message, DhcpOption paramList);
+    protected abstract DhcpPayload handleDhcpInform(DhcpMessageOverlay message,
+                                                    Map<DhcpOptionType, DhcpOption> options);
 
 }

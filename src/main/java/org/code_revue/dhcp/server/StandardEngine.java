@@ -57,7 +57,7 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, DhcpOption reqAddr, DhcpOption paramList) {
+    protected DhcpPayload handleDhcpDiscover(DhcpMessageOverlay message, Map<DhcpOptionType, DhcpOption> options) {
 
         // Validate message, register device, borrow address from pool, return DHCP Offer
         NetworkDevice device = getDevice(message.getClientHardwareAddress());
@@ -81,6 +81,7 @@ public class StandardEngine extends AbstractEngine {
         }
 
         byte[] borrowedAddress = null;
+        DhcpOption reqAddr = options.get(DhcpOptionType.REQUESTED_IP_ADDR);
 
         if (null != reqAddr) {
             borrowedAddress = pool.borrowAddress(reqAddr.getOptionData());
@@ -106,6 +107,7 @@ public class StandardEngine extends AbstractEngine {
                     .addOption(configuration.get(DhcpOptionType.SERVER_ID))
                     .addOption(configuration.get(DhcpOptionType.IP_ADDR_LEASE_TIME));
 
+            DhcpOption paramList = options.get(DhcpOptionType.PARAMETER_REQUEST_LIST);
             if (null != paramList) {
                 byte[] parameterList = paramList.getOptionData();
                 for (byte param: parameterList) {
@@ -142,8 +144,7 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, DhcpOption serverId,
-                                            DhcpOption requestedIpAddress) {
+    protected DhcpPayload handleDhcpRequest(DhcpMessageOverlay message, Map<DhcpOptionType, DhcpOption> options) {
 
         // Validate message, update device status, if the requested address is valid, return DHCP Acknowledgement,
         // otherwise, DHCP NAK
@@ -155,6 +156,8 @@ public class StandardEngine extends AbstractEngine {
             return null;
         }
 
+        DhcpOption serverId = options.get(DhcpOptionType.SERVER_ID);
+        DhcpOption requestedIpAddress = options.get(DhcpOptionType.REQUESTED_IP_ADDR);
         if (null == serverId) {
             byte[] requestedAddress;
             if (null == requestedIpAddress) {
@@ -217,8 +220,8 @@ public class StandardEngine extends AbstractEngine {
                 .setHardwareAddress(message.getClientHardwareAddress())
                 .addOption(DhcpMessageType.ACK.getOption());
 
-        Map<DhcpOptionType, DhcpOption> options = device.getOptions();
-        for (DhcpOption option: options.values()) {
+        Map<DhcpOptionType, DhcpOption> devOptions = device.getOptions();
+        for (DhcpOption option: devOptions.values()) {
             if (!DhcpOptionType.MESSAGE_TYPE.equals(option.getType())) {
                 builder.addOption(option);
             }
@@ -253,7 +256,7 @@ public class StandardEngine extends AbstractEngine {
     }
 
     @Override
-    protected DhcpPayload handleDhcpInform(DhcpMessageOverlay message, DhcpOption paramList) {
+    protected DhcpPayload handleDhcpInform(DhcpMessageOverlay message, Map<DhcpOptionType, DhcpOption> options) {
 
         // Validate message, update device status and send back DHCP Acknowledgement with requested configuration info
         NetworkDevice device = getDevice(message.getClientHardwareAddress());
@@ -268,6 +271,7 @@ public class StandardEngine extends AbstractEngine {
                 .setHardwareAddress(message.getClientHardwareAddress())
                 .addOption(DhcpMessageType.ACK.getOption());
 
+        DhcpOption paramList = options.get(DhcpOptionType.PARAMETER_REQUEST_LIST);
         Map<DhcpOptionType, DhcpOption> informOptions = new HashMap<>();
         if (null != paramList) {
             byte[] parameterList = paramList.getOptionData();
