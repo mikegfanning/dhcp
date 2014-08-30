@@ -48,4 +48,23 @@ public class TestLoggerUtils {
         Assert.assertEquals(expected, LoggerUtils.bufferToHexString(buffer));
     }
 
+    @Test
+    public void toHexString() {
+        byte[] d1 = new byte[] { (byte) 255, (byte) 254, (byte) 128, (byte) 127, (byte) 1, (byte) 0 };
+        Assert.assertEquals("ff:fe:80:7f:01:00", LoggerUtils.toHexString(d1, ':'));
+        Assert.assertEquals("fffe807f0100", LoggerUtils.toHexString(d1));
+
+        byte[] d2 = new byte[0];
+        Assert.assertEquals("", LoggerUtils.toHexString(d2, ':'));
+        Assert.assertEquals("", LoggerUtils.toHexString(d2));
+    }
+
+    @Test
+    public void ipAddressToString() {
+        Assert.assertEquals("0.0.0.0", LoggerUtils.ipAddressToString(new byte[] { 0, 0, 0, 0 }));
+        Assert.assertEquals("255.255.255.255", LoggerUtils.ipAddressToString(new byte[]
+                { (byte) 255, (byte) 255, (byte) 255, (byte) 255 }));
+        Assert.assertEquals("192.168.1.8", LoggerUtils.ipAddressToString(new byte[] { (byte) 192, (byte) 168, 1, 8 }));
+    }
+
 }

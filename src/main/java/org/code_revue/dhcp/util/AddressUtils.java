@@ -48,18 +48,4 @@ public class AddressUtils {
         return builder.toString();
     }
 
-    public static String ipAddressToString(byte[] address) {
-        StringBuilder builder = new StringBuilder(address.length * 4);
-        boolean cherry = false;
-        for (byte segment: address) {
-            if (cherry) {
-                builder.append('.');
-            } else {
-                cherry = true;
-            }
-            builder.append(segment & 0xff);
-        }
-        return builder.toString();
-    }
-
 }

@@ -2,6 +2,7 @@ package org.code_revue.dhcp.server;
 
 import org.code_revue.dhcp.message.*;
 import org.code_revue.dhcp.util.AddressUtils;
+import org.code_revue.dhcp.util.LoggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,7 +196,7 @@ public class StandardEngine extends AbstractEngine {
             if (logger.isInfoEnabled()) {
                 logger.info("Client {} has elected to use another DHCP server {}",
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()),
-                        AddressUtils.ipAddressToString(serverId.getOptionData()));
+                        LoggerUtils.ipAddressToString(serverId.getOptionData()));
             }
             resetDevice(device);
             return null;
