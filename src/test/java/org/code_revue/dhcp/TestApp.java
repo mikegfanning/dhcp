@@ -5,6 +5,8 @@ import org.code_revue.dhcp.message.DhcpOptionType;
 import org.code_revue.dhcp.server.DhcpServer;
 import org.code_revue.dhcp.server.StandardEngine;
 import org.code_revue.dhcp.server.StandardIp4AddressPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -17,6 +19,8 @@ import java.util.concurrent.Executors;
  * @author Mike Fanning
  */
 public class TestApp {
+
+    private static final Logger logger = LoggerFactory.getLogger(TestApp.class);
 
     public static void main(String... args) throws IOException {
 
@@ -35,7 +39,7 @@ public class TestApp {
         engine.setConfiguration(new ByteArrayOption(DhcpOptionType.DNS_SERVER, dns));
 
         final DhcpServer server = new DhcpServer();
-        //server.setPort(5068);
+        server.setPort(1067);
         server.setEngine(engine);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
