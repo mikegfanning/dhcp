@@ -5,9 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketAddress;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.DatagramChannel;
@@ -39,7 +37,7 @@ public class DhcpServer implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(DhcpServer.class);
 
     public static final int DEFAULT_DHCP_SERVER_PORT = 67;
-    public static final int MAX_UDP_PACKET_SIZE = 512;
+    public static final int MIN_IP_DATAGRAM_SIZE = 576;
 
     private volatile boolean running = false;
 
@@ -58,7 +56,7 @@ public class DhcpServer implements Runnable {
      * @throws IOException If there is an error while opening and binding the socket.
      * @see <a href="http://en.wikipedia.org/wiki/Dhcp">http://en.wikipedia.org/wiki/Dhcp</a>
      */
-    private void start() throws IOException {
+    public void start() throws IOException {
 
         logger.info("Starting DHCP Server");
 
@@ -93,13 +91,13 @@ public class DhcpServer implements Runnable {
         while (running) {
             try {
 
-                ByteBuffer messageBuffer = ByteBuffer.allocateDirect(MAX_UDP_PACKET_SIZE);
+                ByteBuffer messageBuffer = ByteBuffer.allocateDirect(MIN_IP_DATAGRAM_SIZE);
                 SocketAddress address = channel.receive(messageBuffer);
                 receiveCount.incrementAndGet();
 
                 logger.debug("Message received from {}", address);
                 if (logger.isTraceEnabled()) {
-                    logger.debug("Message data:\n{}", LoggerUtils.bufferToHexString(messageBuffer));
+                    logger.trace("Message data:\n{}", LoggerUtils.prettyPrintDhcpMessage(messageBuffer));
                 }
 
                 DhcpPayload message = new DhcpPayload(address, messageBuffer);
@@ -112,7 +110,7 @@ public class DhcpServer implements Runnable {
 
                     logger.debug("Message sent to {}", response.getAddress());
                     if (logger.isTraceEnabled()) {
-                        logger.debug("Message data:\n{}", LoggerUtils.bufferToHexString(response.getData()));
+                        logger.trace("Message data:\n{}", LoggerUtils.prettyPrintDhcpMessage(response.getData()));
                     }
                 }
 
@@ -137,7 +135,7 @@ public class DhcpServer implements Runnable {
      * Stops the server. This will close and release any underlying resources.
      * @throws IOException
      */
-    private void stop() throws IOException {
+    public void stop() throws IOException {
 
         logger.info("Stopping DHCP Server");
 
