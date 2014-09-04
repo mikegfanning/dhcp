@@ -62,7 +62,7 @@ public class TestStandardEngine {
     public void setup() throws Exception {
         engine = new StandardEngine(serverIpAddress);
         engine.setAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
-        discoverMessage = ByteBuffer.allocateDirect(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
+        discoverMessage = ByteBuffer.allocate(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
         readOnlyDiscoverMessage.position(0);
     }
 
@@ -135,7 +135,7 @@ public class TestStandardEngine {
 
     @Test
     public void badMessage() {
-        ByteBuffer message = ByteBuffer.allocateDirect(0);
+        ByteBuffer message = ByteBuffer.allocate(0);
         DhcpPayload response = engine.processDhcpPayload(new DhcpPayload(clientWireAddress, message));
     }
 

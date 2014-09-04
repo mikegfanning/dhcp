@@ -91,7 +91,7 @@ public class DhcpServer implements Runnable {
         while (running) {
             try {
 
-                ByteBuffer messageBuffer = ByteBuffer.allocateDirect(MIN_IP_DATAGRAM_SIZE);
+                ByteBuffer messageBuffer = ByteBuffer.allocate(MIN_IP_DATAGRAM_SIZE);
                 SocketAddress address = channel.receive(messageBuffer);
                 receiveCount.incrementAndGet();
 

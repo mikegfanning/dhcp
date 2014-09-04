@@ -50,7 +50,7 @@ public class DhcpMessageBuilder {
      * Creates a builder object with an empty buffer.
      */
     public DhcpMessageBuilder() {
-        buffer = ByteBuffer.allocateDirect(MAX_UDP_SIZE);
+        buffer = ByteBuffer.allocate(MAX_UDP_SIZE);
         overlay = new DhcpMessageOverlay(buffer);
     }
 
