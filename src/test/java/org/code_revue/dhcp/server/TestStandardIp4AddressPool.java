@@ -32,6 +32,7 @@ public class TestStandardIp4AddressPool {
         new StandardIp4AddressPool(address3, address3);
         new StandardIp4AddressPool(address3, address4);
         new StandardIp4AddressPool(address4, address4);
+        new StandardIp4AddressPool("100.0.0.1", "101.0.0.1");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -62,6 +63,11 @@ public class TestStandardIp4AddressPool {
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor6() {
         new StandardIp4AddressPool(address4, address3);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidConstructor7() {
+        new StandardIp4AddressPool("101.0.0.1", "100.0.0.1");
     }
 
     @Test(expected = IllegalArgumentException.class)

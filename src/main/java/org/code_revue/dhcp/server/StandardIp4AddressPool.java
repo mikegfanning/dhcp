@@ -50,6 +50,16 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     }
 
     /**
+     * Creates a new IPv4 address pool with the supplied start and end addresses.
+     * @param start Starting IP address, inclusive
+     * @param end Ending IP address, inclusive
+     * @throws java.lang.IllegalArgumentException If the addresses are malformed or the start is after the end
+     */
+    public StandardIp4AddressPool(String start, String end) {
+        this(AddressUtils.convertToByteArray(start), AddressUtils.convertToByteArray(end));
+    }
+
+    /**
      * Adds an address exclusion to the pool. This will prevent the pool from lending this address to callers.
      * @param address IPv4 address to exclude from the pool
      * @return If the address was not already excluded

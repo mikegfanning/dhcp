@@ -1,6 +1,7 @@
 package org.code_revue.dhcp.util;
 
 import java.util.Comparator;
+import java.util.StringTokenizer;
 
 /**
  * Basically a bunch of junk for dealing with the weirdness of signed vs. unsigned bytes in Java.
@@ -32,6 +33,17 @@ public class AddressUtils {
                 (byte) ((address >> 8) & 0xff),
                 (byte) (address & 0xff)
         };
+    }
+
+    public static byte[] convertToByteArray(String address) {
+        StringTokenizer tokenizer = new StringTokenizer(address, ".");
+        byte[] answer = new byte[tokenizer.countTokens()];
+        int i = 0;
+        while (tokenizer.hasMoreTokens()) {
+            answer[i] = (byte) (Integer.parseInt(tokenizer.nextToken()) & 0xff);
+            i++;
+        }
+        return answer;
     }
 
     public static String hardwareAddressToString(byte[] address) {
