@@ -7,10 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -44,6 +41,10 @@ public class StandardEngine extends AbstractEngine {
 
     // Like the devices, should probably move this into some separate component with interface.
     private Map<DhcpOptionType, DhcpOption> configuration = new HashMap<>();
+
+    public StandardEngine() throws UnknownHostException {
+        this(Inet4Address.getLocalHost().getAddress());
+    }
 
     public StandardEngine(byte[] serverIpAddress) {
         this(serverIpAddress, DEFAULT_TTL);
@@ -336,6 +337,19 @@ public class StandardEngine extends AbstractEngine {
     public void setConfiguration(DhcpOption option) {
         logger.debug("Setting configuration option {}", option);
         configuration.put(option.getType(), option);
+    }
+
+    /**
+     * This method sets multiple DHCP configuration options via the provided list. When a client sends a DHCP Discover
+     * or Inform message seeking configuration options, this mapping will determine the reponse. Note that the response
+     * type of the supplied {@link org.code_revue.dhcp.message.DhcpOption} need not match the request type of the
+     * {@link org.code_revue.dhcp.message.DhcpOptionType}.
+     * @param options List of configured response values
+     */
+    public void setConfigurations(List<DhcpOption> options) {
+        for (DhcpOption option: options) {
+            setConfiguration(option);
+        }
     }
 
     /**
