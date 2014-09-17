@@ -72,10 +72,6 @@ public class DhcpServer implements Runnable {
         InetSocketAddress address = (InetSocketAddress) channel.getLocalAddress();
         engine.setServerIpAddress(address.getAddress().getAddress());
 
-        logger.info("Setting engine hardware address");
-        NetworkInterface net = NetworkInterface.getByInetAddress(address.getAddress());
-        engine.setHardwareAddress(net.getHardwareAddress());
-
         running  = true;
 
     }
