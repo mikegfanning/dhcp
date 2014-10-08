@@ -60,6 +60,22 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     }
 
     /**
+     * Returns the starting address of the address pool represented as an integer.
+     * @return
+     */
+    public byte[] getStart() {
+        return AddressUtils.convertToByteArray(start);
+    }
+
+    /**
+     * Returns the ending address of the address pool represented as an integer.
+     * @return
+     */
+    public byte[] getEnd() {
+        return AddressUtils.convertToByteArray(end);
+    }
+
+    /**
      * Adds an address exclusion to the pool. This will prevent the pool from lending this address to callers.
      * @param address IPv4 address to exclude from the pool
      * @return If the address was not already excluded

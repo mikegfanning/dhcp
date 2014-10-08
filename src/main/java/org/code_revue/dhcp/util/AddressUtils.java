@@ -46,6 +46,23 @@ public class AddressUtils {
         return answer;
     }
 
+    public static String convertToString(byte[] address) {
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (byte b: address) {
+            if (!first) {
+                builder.append('.');
+            }
+            first = false;
+            builder.append(b & 0xff);
+        }
+        return builder.toString();
+    }
+
+    public static String convertToString(int address) {
+        return convertToString(convertToByteArray(address));
+    }
+
     public static String hardwareAddressToString(byte[] address) {
         StringBuilder builder = new StringBuilder((address.length * 3) - 1);
         boolean cherry = false;

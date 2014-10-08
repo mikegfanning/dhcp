@@ -1,6 +1,8 @@
 package org.code_revue.dhcp.server;
 
-import org.junit.Assert;
+import static org.junit.Assert.*;
+
+import org.code_revue.dhcp.util.AddressUtils;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -33,6 +35,13 @@ public class TestStandardIp4AddressPool {
         new StandardIp4AddressPool(address3, address4);
         new StandardIp4AddressPool(address4, address4);
         new StandardIp4AddressPool("100.0.0.1", "101.0.0.1");
+    }
+
+    @Test
+    public void getters() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        assertEquals("100.0.0.1", AddressUtils.convertToString(pool.getStart()));
+        assertEquals("101.0.0.1", AddressUtils.convertToString(pool.getEnd()));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -108,33 +117,33 @@ public class TestStandardIp4AddressPool {
         Iterable<byte[]> exclusions = pool.getExclusions();
         int count = 0;
         for (byte[] address: exclusions) {
-            Assert.assertArrayEquals(address6, address);
+            assertArrayEquals(address6, address);
             count++;
         }
-        Assert.assertEquals(1, count);
+        assertEquals(1, count);
     }
 
     @Test
     public void addRemoveExclusion() {
         StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
-        Assert.assertTrue(pool.addExclusion(address6));
-        Assert.assertFalse(pool.addExclusion(address6));
-        Assert.assertTrue(pool.removeExclusion(address6));
-        Assert.assertFalse(pool.removeExclusion(address1));
+        assertTrue(pool.addExclusion(address6));
+        assertFalse(pool.addExclusion(address6));
+        assertTrue(pool.removeExclusion(address6));
+        assertFalse(pool.removeExclusion(address1));
 
         Iterable<byte[]> exclusions = pool.getExclusions();
         int count = 0;
         for (byte[] address: exclusions) {
             count++;
         }
-        Assert.assertEquals(0, count);
+        assertEquals(0, count);
     }
 
     @Test
     public void borrowSpecificAddress() {
         StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
-        Assert.assertNotNull(pool.borrowAddress(address7));
-        Assert.assertNull(pool.borrowAddress(address7));
+        assertNotNull(pool.borrowAddress(address7));
+        assertNull(pool.borrowAddress(address7));
     }
 
     @Test
@@ -175,7 +184,7 @@ public class TestStandardIp4AddressPool {
 
         Set<Integer> checker = new ConcurrentSkipListSet<>();
         for (Integer i: addresses) {
-            Assert.assertTrue(checker.add(i));
+            assertTrue(checker.add(i));
         }
 
         executor.shutdown();
