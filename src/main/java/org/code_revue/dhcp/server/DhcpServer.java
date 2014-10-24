@@ -9,6 +9,10 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.DatagramChannel;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -45,13 +49,17 @@ public class DhcpServer implements Runnable {
     private DhcpEngine engine;
     private int port = DEFAULT_DHCP_SERVER_PORT;
 
+    private Executor executor;
+
     private AtomicLong receiveCount = new AtomicLong(0);
     private AtomicLong sendCount = new AtomicLong(0);
     private AtomicLong errorCount = new AtomicLong(0);
 
     /**
      * Starts the server, which consists of opening a datagram channel or socket, binding it to a port (default 67) and
-     * configuring it for broadcast. Most DHCP responses will be broadcasts to 255.255.255.255.
+     * configuring it for broadcast. Most DHCP responses will be broadcasts to 255.255.255.255. The server uses an
+     * {@link java.util.concurrent.Executor} to run tasks. If one is not present when this method is called, a new
+     * {@link java.util.concurrent.ThreadPoolExecutor} will be created with default values.
      *
      * @throws IOException If there is an error while opening and binding the socket.
      * @see <a href="http://en.wikipedia.org/wiki/Dhcp">http://en.wikipedia.org/wiki/Dhcp</a>
@@ -64,6 +72,15 @@ public class DhcpServer implements Runnable {
             throw new IllegalStateException("DHCP Server is already running");
         }
 
+        if (null == executor) {
+            logger.debug("No Executor found, creating ThreadPoolExecutor");
+            ThreadPoolExecutor tpExec = new ThreadPoolExecutor(5, 10, 60, TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(40));
+            logger.debug("Prestarting all cores in ThreadPoolExecutor");
+            tpExec.prestartAllCoreThreads();
+            executor = tpExec;
+        }
+
         channel = DatagramChannel.open();
         logger.info("Binding DatagramChannel to port {}", port);
         channel.bind(new InetSocketAddress(port));
@@ -71,6 +88,8 @@ public class DhcpServer implements Runnable {
         logger.info("Setting engine server IP address");
         InetSocketAddress address = (InetSocketAddress) channel.getLocalAddress();
         engine.setServerIpAddress(address.getAddress().getAddress());
+
+        executor.execute(this);
 
         running  = true;
 
@@ -184,6 +203,23 @@ public class DhcpServer implements Runnable {
             throw new IllegalStateException("DHCP Server is already running");
         }
         this.port = port;
+    }
+
+    /**
+     * Get the {@link java.util.concurrent.Executor} used by this server for running tasks.
+     * @return
+     */
+    public Executor getExecutor() {
+        return executor;
+    }
+
+    /**
+     * Set the {@link java.util.concurrent.Executor} used this server for running tasks.
+     * @param executor
+     */
+    public void setExecutor(Executor executor) {
+        assert null != executor;
+        this.executor = executor;
     }
 
     /**
