@@ -362,6 +362,14 @@ public class StandardEngine extends AbstractEngine {
     }
 
     /**
+     * Returns an unmodifiable view of the configurations for this engine.
+     * @return Unmodifiable map of configured options
+     */
+    public Map<DhcpOptionType, DhcpOption> getConfiguration() {
+        return Collections.unmodifiableMap(configuration);
+    }
+
+    /**
      * Removes a configuration option from the server's set of parameters.
      * @param optionType Requested configuration option type
      * @return Option previously associated with this type
