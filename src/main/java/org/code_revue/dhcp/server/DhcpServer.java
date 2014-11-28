@@ -75,7 +75,7 @@ public class DhcpServer implements Runnable {
         if (null == executor) {
             logger.debug("No Executor found, creating ThreadPoolExecutor");
             ThreadPoolExecutor tpExec = new ThreadPoolExecutor(5, 10, 60, TimeUnit.SECONDS,
-                    new ArrayBlockingQueue<>(40));
+                    new ArrayBlockingQueue<Runnable>(40));
             logger.debug("Prestarting all cores in ThreadPoolExecutor");
             tpExec.prestartAllCoreThreads();
             executor = tpExec;
