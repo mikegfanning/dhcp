@@ -33,7 +33,7 @@ public class DhcpMessageBuilder {
 
     static {
         try {
-            rand = SecureRandom.getInstanceStrong();
+            rand = SecureRandom.getInstance("SHA1PRNG");
         } catch (NoSuchAlgorithmException e) {
             rand = new Random(System.nanoTime());
         }
