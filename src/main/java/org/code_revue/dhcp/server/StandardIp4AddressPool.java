@@ -38,12 +38,14 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
         this.end = AddressUtils.convertToInt(end);
 
         if (this.start > this.end && !(this.start >= 0 && this.end < 0)) {
-            throw new IllegalArgumentException("Start Address is after End Address");
+            throw new IllegalArgumentException("Start Address " + AddressUtils.convertToString(this.start) + " is " +
+                    "after End Address " + AddressUtils.convertToString(this.end));
         }
 
         int range = this.end - this.start + 1;
         if (range <= 0) {
-            throw new IllegalArgumentException("Address range is too large");
+            throw new IllegalArgumentException("Address range " + AddressUtils.convertToString(this.start) + " - " +
+                    AddressUtils.convertToString(this.end) + " is too large");
         }
 
         this.flags = new BitSet(range);
