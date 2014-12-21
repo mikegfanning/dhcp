@@ -6,6 +6,7 @@ import org.code_revue.dhcp.util.AddressUtils;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -21,6 +22,8 @@ public class TestStandardIp4AddressPool {
     private final byte[] address5 = new byte[] { (byte) 255, (byte) 255, (byte) 255, (byte) 254};
     private final byte[] address6 = new byte[] { (byte) 192, (byte) 168, 1, 10};
     private final byte[] address7 = new byte[] { (byte) 192, (byte) 168, 1, 19};
+    private final byte[] address8 = new byte[] { (byte) 192, (byte) 168, 1, 12};
+    private final byte[] address9 = new byte[] { (byte) 192, (byte) 168, 1, 5};
 
     @Test
     public void validConstructors() {
@@ -121,6 +124,98 @@ public class TestStandardIp4AddressPool {
             count++;
         }
         assertEquals(1, count);
+    }
+
+    @Test
+    public void changeStartAddress() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+
+        byte[] address = Arrays.copyOf(address8, 4);
+        byte[] borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+        address[3] = 14;
+        borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+        address[3] = 17;
+        borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+
+        pool.setStart(address9);
+
+        address[3] = 12;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 14;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 17;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+
+        pool.setStart(address6);
+
+        address[3] = 12;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 14;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 17;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+
+    }
+
+    @Test
+    public void changeEndAddress() {
+        // 192.168.1.5 to 192.168.1.12
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address9, address8);
+
+        byte[] address = Arrays.copyOf(address9, 4);
+        byte[] borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+        address[3] = 7;
+        borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+        address[3] = 9;
+        borrowedAddress = pool.borrowAddress(address);
+        assertArrayEquals(address, borrowedAddress);
+
+        // 192.168.1.19
+        pool.setEnd(address7);
+        address[3] = 5;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 7;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 9;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+
+        // 192.168.1.12
+        pool.setEnd(address8);
+        address[3] = 5;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 7;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+        address[3] = 9;
+        borrowedAddress = pool.borrowAddress(address);
+        assertNull(borrowedAddress);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidStartAddress() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        pool.setStart(address3);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidEndAddress() {
+        StandardIp4AddressPool pool = new StandardIp4AddressPool(address3, address4);
+        pool.setEnd(address2);
     }
 
     @Test

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * Implementation of {@link org.code_revue.dhcp.server.DhcpAddressPool} for IPv4 addresses. The pool hands out addresses
- * from a range, as defined by the start and end paramters of the constructor. It also has a set of excluded addresses
+ * from a range, as defined by the start and end parameters of the constructor. It also has a set of excluded addresses
  * that the pool will not issue.
  *
  * @author Mike Fanning
@@ -68,11 +68,64 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     }
 
     /**
+     * Change the beginning address of the pool. This will preserve the state of borrowed addresses if the new starting
+     * address is less than (in IPv4 terms) the previous start address. Otherwise, the state of borrowed addresses will
+     * only be preserved for borrows that are greater than or equal to the new starting address.
+     * @param address Starting IP address of the pool, inclusive
+     */
+    public void setStart(byte[] address) {
+        int newStart = AddressUtils.convertToInt(address);
+        synchronized (this) {
+            if (newStart > this.end && !(newStart >= 0 && this.end < 0)) {
+                throw new IllegalArgumentException("Start Address is after End Address");
+            }
+
+            int range = this.end - newStart + 1;
+            if (range <= 0) {
+                throw new IllegalArgumentException("Address range is too large");
+            }
+
+            this.start = newStart;
+            BitSet newFlags = new BitSet(range);
+            // Copy flags, starting from the end and working towards the beginning.
+            for (int i = 0; i < Math.min(this.flags.length(), range); i++) {
+                newFlags.set(range - i - 1, this.flags.get(this.flags.length() - 1));
+            }
+            this.flags = newFlags;
+        }
+    }
+
+    /**
      * Returns the ending address of the address pool represented as an integer.
      * @return
      */
     public byte[] getEnd() {
         return AddressUtils.convertToByteArray(end);
+    }
+
+    /**
+     * Change the ending address of the pool. This will preserve the state of borrowed addresses if the new end address
+     * is greater than (in IPv4 terms) the previous end address. Otherwise, the state of borrowed addesses will only be
+     * preserved if the borrowed address is less than or equal to the new end address.
+     * @param address Ending IP address of the pool, inclusive
+     */
+    public synchronized void setEnd(byte[] address) {
+        int newEnd = AddressUtils.convertToInt(address);
+        synchronized (this) {
+            if (this.start > newEnd && !(this.start >= 0 && newEnd < 0)) {
+                throw new IllegalArgumentException("Start Address is after End Address");
+            }
+
+            int range = newEnd - this.start + 1;
+            if (range <= 0) {
+                throw new IllegalArgumentException("Address range is too large");
+            }
+
+            this.end = newEnd;
+            BitSet newFlags = new BitSet(range);
+            newFlags.or(this.flags);
+            this.flags = newFlags;
+        }
     }
 
     /**
