@@ -75,7 +75,12 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
      */
     public void setStart(byte[] address) {
         int newStart = AddressUtils.convertToInt(address);
+
         synchronized (this) {
+            if (newStart == this.start) {
+                return;
+            }
+
             if (newStart > this.end && !(newStart >= 0 && this.end < 0)) {
                 throw new IllegalArgumentException("Start Address is after End Address");
             }
@@ -112,6 +117,10 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
     public synchronized void setEnd(byte[] address) {
         int newEnd = AddressUtils.convertToInt(address);
         synchronized (this) {
+            if (newEnd == this.end) {
+                return;
+            }
+
             if (this.start > newEnd && !(this.start >= 0 && newEnd < 0)) {
                 throw new IllegalArgumentException("Start Address is after End Address");
             }
