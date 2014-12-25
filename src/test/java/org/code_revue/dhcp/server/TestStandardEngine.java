@@ -61,7 +61,7 @@ public class TestStandardEngine {
     @Before
     public void setup() throws Exception {
         engine = new StandardEngine(serverIpAddress);
-        engine.setAddressPool(new StandardIp4AddressPool(addressPoolStart, addressPoolEnd));
+        engine.setAddressPool(new BitSetAddressPool(addressPoolStart, addressPoolEnd));
         discoverMessage = ByteBuffer.allocate(readOnlyDiscoverMessage.capacity()).put(readOnlyDiscoverMessage);
         readOnlyDiscoverMessage.position(0);
     }

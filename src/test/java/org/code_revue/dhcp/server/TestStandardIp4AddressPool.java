@@ -27,76 +27,76 @@ public class TestStandardIp4AddressPool {
 
     @Test
     public void validConstructors() {
-        new StandardIp4AddressPool(address1, address1);
-        new StandardIp4AddressPool(address1, address2);
-        new StandardIp4AddressPool(address1, address3);
-        new StandardIp4AddressPool(address1, address4);
-        new StandardIp4AddressPool(address2, address2);
-        new StandardIp4AddressPool(address2, address3);
-        new StandardIp4AddressPool(address2, address4);
-        new StandardIp4AddressPool(address3, address3);
-        new StandardIp4AddressPool(address3, address4);
-        new StandardIp4AddressPool(address4, address4);
-        new StandardIp4AddressPool("100.0.0.1", "101.0.0.1");
+        new BitSetAddressPool(address1, address1);
+        new BitSetAddressPool(address1, address2);
+        new BitSetAddressPool(address1, address3);
+        new BitSetAddressPool(address1, address4);
+        new BitSetAddressPool(address2, address2);
+        new BitSetAddressPool(address2, address3);
+        new BitSetAddressPool(address2, address4);
+        new BitSetAddressPool(address3, address3);
+        new BitSetAddressPool(address3, address4);
+        new BitSetAddressPool(address4, address4);
+        new BitSetAddressPool("100.0.0.1", "101.0.0.1");
     }
 
     @Test
     public void getters() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        BitSetAddressPool pool = new BitSetAddressPool(address1, address2);
         assertEquals("100.0.0.1", AddressUtils.convertToString(pool.getStart()));
         assertEquals("101.0.0.1", AddressUtils.convertToString(pool.getEnd()));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor1() {
-        new StandardIp4AddressPool(address2, address1);
+        new BitSetAddressPool(address2, address1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor2() {
-        new StandardIp4AddressPool(address3, address1);
+        new BitSetAddressPool(address3, address1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor3() {
-        new StandardIp4AddressPool(address4, address1);
+        new BitSetAddressPool(address4, address1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor4() {
-        new StandardIp4AddressPool(address3, address2);
+        new BitSetAddressPool(address3, address2);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor5() {
-        new StandardIp4AddressPool(address4, address2);
+        new BitSetAddressPool(address4, address2);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor6() {
-        new StandardIp4AddressPool(address4, address3);
+        new BitSetAddressPool(address4, address3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidConstructor7() {
-        new StandardIp4AddressPool("101.0.0.1", "100.0.0.1");
+        new BitSetAddressPool("101.0.0.1", "100.0.0.1");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void outOfRange() {
-        new StandardIp4AddressPool(address1, address5);
+        new BitSetAddressPool(address1, address5);
     }
 
     @Test
     public void borrowAndReturn() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        BitSetAddressPool pool = new BitSetAddressPool(address1, address2);
         byte[] address = pool.borrowAddress();
         pool.returnAddress(address);
     }
 
     @Test
     public void borrowAllAddresses() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
         for (int c = 0; c < 10; c++) {
             pool.borrowAddress();
         }
@@ -104,7 +104,7 @@ public class TestStandardIp4AddressPool {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void borrowTooManyAddresses() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
         for (int c = 0; c < 11; c++) {
             pool.borrowAddress();
         }
@@ -112,7 +112,7 @@ public class TestStandardIp4AddressPool {
 
     @Test
     public void addSameExclusion() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
         for (int c = 0; c < 10; c++) {
             pool.addExclusion(address6);
         }
@@ -128,7 +128,7 @@ public class TestStandardIp4AddressPool {
 
     @Test
     public void changeStartAddress() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
 
         byte[] address = Arrays.copyOf(address8, 4);
         byte[] borrowedAddress = pool.borrowAddress(address);
@@ -169,7 +169,7 @@ public class TestStandardIp4AddressPool {
     @Test
     public void changeEndAddress() {
         // 192.168.1.5 to 192.168.1.12
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address9, address8);
+        BitSetAddressPool pool = new BitSetAddressPool(address9, address8);
 
         byte[] address = Arrays.copyOf(address9, 4);
         byte[] borrowedAddress = pool.borrowAddress(address);
@@ -208,19 +208,19 @@ public class TestStandardIp4AddressPool {
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidStartAddress() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        BitSetAddressPool pool = new BitSetAddressPool(address1, address2);
         pool.setStart(address3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidEndAddress() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address3, address4);
+        BitSetAddressPool pool = new BitSetAddressPool(address3, address4);
         pool.setEnd(address2);
     }
 
     @Test
     public void addRemoveExclusion() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
         assertTrue(pool.addExclusion(address6));
         assertFalse(pool.addExclusion(address6));
         assertTrue(pool.removeExclusion(address6));
@@ -236,7 +236,7 @@ public class TestStandardIp4AddressPool {
 
     @Test
     public void borrowSpecificAddress() {
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(address6, address7);
+        BitSetAddressPool pool = new BitSetAddressPool(address6, address7);
         assertNotNull(pool.borrowAddress(address7));
         assertNull(pool.borrowAddress(address7));
     }
@@ -244,7 +244,7 @@ public class TestStandardIp4AddressPool {
     @Test
     public void concurrentBorrow() throws InterruptedException {
 
-        final StandardIp4AddressPool pool = new StandardIp4AddressPool(address1, address2);
+        final BitSetAddressPool pool = new BitSetAddressPool(address1, address2);
         final int numThreads = 50;
         final int numAddresses = 1000;
         final CyclicBarrier barrier = new CyclicBarrier(numThreads);

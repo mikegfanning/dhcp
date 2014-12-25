@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
  *
  * @author Mike Fanning
  */
-public class StandardIp4AddressPool implements DhcpAddressPool {
+public class BitSetAddressPool implements DhcpAddressPool {
 
     private int start, end;
     private BitSet flags;
@@ -29,7 +29,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
      * @param end Ending IP address, inclusive
      * @throws java.lang.IllegalArgumentException If the addresses are malformed or the start is after the end
      */
-    public StandardIp4AddressPool(byte[] start, byte[] end) {
+    public BitSetAddressPool(byte[] start, byte[] end) {
         if (start.length != 4 || end.length != 4) {
             throw new IllegalArgumentException("Invalid IPv4 Address");
         }
@@ -57,7 +57,7 @@ public class StandardIp4AddressPool implements DhcpAddressPool {
      * @param end Ending IP address, inclusive
      * @throws java.lang.IllegalArgumentException If the addresses are malformed or the start is after the end
      */
-    public StandardIp4AddressPool(String start, String end) {
+    public BitSetAddressPool(String start, String end) {
         this(AddressUtils.convertToByteArray(start), AddressUtils.convertToByteArray(end));
     }
 

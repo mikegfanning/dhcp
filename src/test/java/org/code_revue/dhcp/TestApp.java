@@ -2,9 +2,9 @@ package org.code_revue.dhcp;
 
 import org.code_revue.dhcp.message.ByteArrayOption;
 import org.code_revue.dhcp.message.DhcpOptionType;
+import org.code_revue.dhcp.server.BitSetAddressPool;
 import org.code_revue.dhcp.server.DhcpServer;
 import org.code_revue.dhcp.server.StandardEngine;
-import org.code_revue.dhcp.server.StandardIp4AddressPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class TestApp {
 
         byte[] start = new byte[] { (byte) 192, (byte) 168, 1, 120 };
         byte[] end = new byte[] { (byte) 192, (byte) 168, 1, (byte) 160 };
-        StandardIp4AddressPool pool = new StandardIp4AddressPool(start, end);
+        BitSetAddressPool pool = new BitSetAddressPool(start, end);
 
         byte[] subnetMask = new byte[] { (byte) 255, (byte) 255, (byte) 255, 0 };
         byte[] router = new byte[] { (byte) 192, (byte) 168, 1, 1 };
