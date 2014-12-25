@@ -13,7 +13,7 @@ import java.util.concurrent.*;
 /**
  * @author Mike Fanning
  */
-public class TestStandardIp4AddressPool {
+public class TestBitSetAddressPool {
 
     private final byte[] address1 = new byte[] { 100, 0, 0, 1 };
     private final byte[] address2 = new byte[] { 101, 0, 0, 1 };
