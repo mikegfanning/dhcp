@@ -39,7 +39,11 @@ public class LoggerUtils {
     }
 
     public static String prettyPrintDhcpMessage(ByteBuffer buffer) {
-        return prettyPrintDhcpMessage(new DhcpMessageOverlay(buffer));
+        try {
+            return prettyPrintDhcpMessage(new DhcpMessageOverlay(buffer));
+        } catch (IllegalArgumentException e) {
+            return "<<ERROR READING DHCP OPTIONS>>\n" + bufferToHexString(buffer);
+        }
     }
 
     public static String prettyPrintDhcpMessage(DhcpMessageOverlay overlay) {
@@ -59,9 +63,10 @@ public class LoggerUtils {
                 .append("Magic Cookie: ").append(toHexString(overlay.getMagicCookie()))
                 .append("\n\nOptions\n-------\n");
 
-        for (DhcpOption option: overlay.getOptions().values()) {
+        for (DhcpOption option : overlay.getOptions().values()) {
             builder.append(option.getType()).append(": ").append(toHexString(option.getOptionData(), ' ')).append('\n');
         }
+
         return builder.toString();
     }
 

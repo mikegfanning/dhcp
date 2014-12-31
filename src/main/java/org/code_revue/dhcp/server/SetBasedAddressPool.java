@@ -117,12 +117,12 @@ public class SetBasedAddressPool implements DhcpAddressPool {
      * @return Addresses that are excluded
      */
     public Iterable<byte[]> getExclusions() {
-        return new Iterable<byte[]>() {
-            @Override
-            public Iterator<byte[]> iterator() {
-                return new ConvertingIterator(exclusions.iterator());
-            }
-        };
+        // My special Iterator adapter that converted the integers to byte[] doesn't play nice with jsp. Argh.
+        List<byte[]> answer = new ArrayList<>();
+        for (Integer e: exclusions) {
+            answer.add(AddressUtils.convertToByteArray(e));
+        }
+        return answer;
     }
 
     private class ConvertingIterator implements Iterator<byte[]> {

@@ -112,7 +112,7 @@ public enum DhcpOptionType {
         if (code >= 224 && code <= 254) {
             return DhcpOptionType.RESERVED;
         } else if (index < 0) {
-            throw new IllegalArgumentException("Invalid numeric code.");
+            throw new IllegalArgumentException("Invalid numeric code: " + code);
         }
         return DhcpOptionType.values()[index];
     }

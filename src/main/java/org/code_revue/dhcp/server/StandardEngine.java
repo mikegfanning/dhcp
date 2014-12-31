@@ -76,7 +76,7 @@ public class StandardEngine extends AbstractEngine {
             // If the device has already been offered a lease or has acknowledged it we'll ignore subsequent discover
             // messages until the lease expires.
             if (logger.isWarnEnabled()) {
-                logger.warn("Client {} is in {} state, should be in OFFERED",
+                logger.warn("Client {} is in {} state, should be in DISCOVERED",
                         AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device.getStatus());
             }
             return null;
@@ -113,10 +113,14 @@ public class StandardEngine extends AbstractEngine {
             if (null != paramList) {
                 byte[] parameterList = paramList.getOptionData();
                 for (byte param: parameterList) {
-                    DhcpOptionType offeredOptionType = DhcpOptionType.getByNumericCode(param);
-                    DhcpOption offeredOption = getConfiguration(offeredOptionType);
-                    if (null != offeredOption) {
-                        builder.addOption(offeredOption);
+                    try {
+                        DhcpOptionType offeredOptionType = DhcpOptionType.getByNumericCode(param);
+                        DhcpOption offeredOption = getConfiguration(offeredOptionType);
+                        if (null != offeredOption) {
+                            builder.addOption(offeredOption);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        logger.trace("Error parsing DHCP options.", e);
                     }
                 }
             }
@@ -175,7 +179,8 @@ public class StandardEngine extends AbstractEngine {
                 requestedAddress = requestedIpAddress.getOptionData();
             }
 
-            if ((new Date()).compareTo(device.getLeaseExpiration()) <= 0) {
+            Date leaseExpiration = device.getLeaseExpiration();
+            if (leaseExpiration != null && (new Date()).compareTo(leaseExpiration) <= 0) {
                 Calendar now = Calendar.getInstance();
                 now.add(Calendar.SECOND, getIpAddressLeaseTime());
                 device.setLeaseExpiration(now.getTime());
