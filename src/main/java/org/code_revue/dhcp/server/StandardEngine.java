@@ -190,7 +190,17 @@ public class StandardEngine extends AbstractEngine {
                 byte[] offeredIpAddress =  pool.borrowAddress(requestedAddress);
 
                 if (null == offeredIpAddress) {
-                    // TODO: Return NAK
+                    DhcpMessageBuilder builder = new DhcpMessageBuilder();
+                    builder.setOpCode(DhcpOpCode.REPLY)
+                            .setHardwareType(HardwareType.ETHERNET)
+                            .setTransactionId(message.getTransactionId())
+                            .setServerIpAddress(getServerIpAddress())
+                            .setBroadcast(message.isBroadcast())
+                            .setGatewayIpAddress(EMPTY_ADDRESS)
+                            .setHardwareAddress(message.getClientHardwareAddress())
+                            .addOption(DhcpMessageType.NAK.getOption())
+                            .addOption(configuration.get(DhcpOptionType.SERVER_ID));
+                    return new DhcpPayload(BROADCAST_ADDRESS, true, builder.build());
                 } else {
                     device.setIpAddress(offeredIpAddress);
                     device.getOptions().put(DhcpOptionType.REQUESTED_IP_ADDR,
