@@ -1,4 +1,4 @@
-package org.code_revue.dhcp.server;
+package org.code_revue.dhcp.device;
 
 import org.code_revue.dhcp.message.DhcpOption;
 import org.code_revue.dhcp.message.DhcpOptionType;
@@ -28,7 +28,7 @@ public class NetworkDevice {
 
     /**
      * Tracks the state of the device through the DHCP configuration process. See
-     * {@link org.code_revue.dhcp.server.DeviceStatus} for more information about the meaning of the different states.
+     * {@link DeviceStatus} for more information about the meaning of the different states.
      * @return
      */
     public DeviceStatus getStatus() {
@@ -37,7 +37,7 @@ public class NetworkDevice {
 
     /**
      * Tracks the state of the device through the DHCP configuration process. See
-     * {@link org.code_revue.dhcp.server.DeviceStatus} for more information about the meaning of the different states.
+     * {@link DeviceStatus} for more information about the meaning of the different states.
      * @return
      */
     public void setStatus(DeviceStatus status) {

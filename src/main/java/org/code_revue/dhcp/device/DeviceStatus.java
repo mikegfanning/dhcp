@@ -1,4 +1,4 @@
-package org.code_revue.dhcp.server;
+package org.code_revue.dhcp.device;
 
 /**
  * Enumeration of the different types of status that a network device attached to the DCHP server can be in. A device

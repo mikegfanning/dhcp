@@ -1,5 +1,7 @@
 package org.code_revue.dhcp.server;
 
+import org.code_revue.dhcp.device.DeviceRegistry;
+import org.code_revue.dhcp.device.SimpleDeviceRegistry;
 import org.code_revue.dhcp.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,25 @@ public abstract class AbstractEngine implements DhcpEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEngine.class);
 
+    protected DeviceRegistry deviceRegistry = new SimpleDeviceRegistry();
+
     protected byte[] hardwareAddress;
+
+    /**
+     * Get the registry used to manage client devices.
+     * @return Registry of client devices
+     */
+    public DeviceRegistry getDeviceRegistry() {
+        return deviceRegistry;
+    }
+
+    /**
+     * Set the registry used to manage client devices.
+     * @param deviceRegistry Registry to use to track client devices
+     */
+    public void setDeviceRegistry(DeviceRegistry deviceRegistry) {
+        this.deviceRegistry = deviceRegistry;
+    }
 
     public void setHardwareAddress(byte[] hardwareAddress) {
         this.hardwareAddress = Arrays.copyOf(hardwareAddress, hardwareAddress.length);
