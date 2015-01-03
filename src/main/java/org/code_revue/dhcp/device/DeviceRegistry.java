@@ -28,4 +28,11 @@ public interface DeviceRegistry {
      */
     public NetworkDevice resetDevice(byte[] hardwareAddress);
 
+    /**
+     * Updates a device in the registry.
+     * @param device Device to be updated
+     * @return Updated information about device
+     */
+    public NetworkDevice updateDevice(NetworkDevice device);
+
 }

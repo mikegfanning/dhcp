@@ -143,6 +143,7 @@ public class StandardEngine extends AbstractEngine {
             expiration.add(Calendar.SECOND, getIpAddressLeaseTime());
             device.setLeaseExpiration(expiration.getTime());
             device.setOptions(offeredOptions);
+            deviceRegistry.updateDevice(device);
         }
 
         return response;
@@ -245,6 +246,7 @@ public class StandardEngine extends AbstractEngine {
         }
 
         device.setStatus(DeviceStatus.ACKNOWLEDGED);
+        deviceRegistry.updateDevice(device);
 
         return new DhcpPayload(BROADCAST_ADDRESS, true, builder.build());
     }
@@ -304,6 +306,7 @@ public class StandardEngine extends AbstractEngine {
             }
         }
         device.setOptions(informOptions);
+        deviceRegistry.updateDevice(device);
 
         SocketAddress clientAddress = null;
         try {

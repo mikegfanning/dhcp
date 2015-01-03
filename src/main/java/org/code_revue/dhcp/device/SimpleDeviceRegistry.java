@@ -46,4 +46,9 @@ public class SimpleDeviceRegistry implements DeviceRegistry {
         device.setStatus(DeviceStatus.DISCOVERED);
         return device;
     }
+
+    @Override
+    public NetworkDevice updateDevice(NetworkDevice device) {
+        return devices.put(AddressUtils.hardwareAddressToString(device.getHardwareAddress()), device);
+    }
 }
