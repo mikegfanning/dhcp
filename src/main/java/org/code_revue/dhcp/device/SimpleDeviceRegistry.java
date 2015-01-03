@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Implementation of {@link org.code_revue.dhcp.device.DeviceRegistry} using in memory map of devices, indexed by
+ * hardware address.
  * @author Mike Fanning
  */
 public class SimpleDeviceRegistry implements DeviceRegistry {
